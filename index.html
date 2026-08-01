@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Costo Viaggio — Captur GPL / Ducati Scrambler</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Costo Viaggio">
+  <meta name="theme-color" content="#00693c">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
+  :root{
+    --verde:#00693c; --verde-scuro:#004d2c; --verde-chiaro:#0a8a52;
+    --asfalto:#1b1f23; --tenue:#6b7178;
+    --grigio:#eceef0; --grigio-2:#dde1e5; --bianco:#fff;
+    --giallo:#f4c300; --giallo-2:#dca300;
+    --rosso:#c8102e;
+    --display:'Archivo',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--body);color:var(--asfalto);line-height:1.45;
+    background:radial-gradient(1000px 500px at 50% -180px,#f6f8f9,transparent),var(--grigio);
+    min-height:100vh;padding:calc(26px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+  .wrap{max-width:660px;margin:0 auto}
+  header{margin-bottom:22px}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--verde);color:#fff;
+    font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    padding:6px 12px;border-radius:6px;border:2px solid rgba(255,255,255,.85);box-shadow:0 2px 0 var(--verde-scuro)}
+  .eyebrow svg{width:15px;height:15px}
+  h1{font-family:var(--display);font-weight:900;font-size:clamp(28px,6.5vw,40px);line-height:1.03;letter-spacing:-.02em;margin-top:13px}
+  .sub{color:var(--tenue);margin-top:7px;font-size:15px;max-width:48ch}
+  .card{background:var(--bianco);border-radius:16px;border:1px solid var(--grigio-2);
+    box-shadow:0 1px 2px rgba(20,25,30,.04),0 12px 30px -20px rgba(20,25,30,.22);padding:20px;margin-top:20px}
+  .card h2{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-bottom:15px}
+
+  .veh-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .veh{border:2px solid var(--grigio-2);border-radius:14px;padding:12px 12px 14px;cursor:pointer;background:#fafbfc;
+    transition:border-color .15s,box-shadow .15s,transform .08s;position:relative;text-align:center}
+  .veh:hover{transform:translateY(-2px)}
+  .veh.sel{border-color:var(--verde);box-shadow:0 0 0 3px rgba(10,138,82,.15)}
+  .veh .check{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:50%;background:var(--verde);color:#fff;display:none;align-items:center;justify-content:center;z-index:4}
+  .veh.sel .check{display:flex}
+  .veh .check svg{width:13px;height:13px}
+  .media{position:relative;height:84px}
+  .veh svg.icon{width:100%;height:84px;display:block}
+  .veh .foto{position:absolute;inset:0;width:100%;height:84px;object-fit:cover;border-radius:10px;display:none}
+  .foto-btn,.foto-rm{position:absolute;left:6px;top:6px;z-index:3;font-size:11px;font-weight:700;
+    padding:3px 8px;border-radius:20px;border:none;background:rgba(0,0,0,.55);color:#fff;cursor:pointer;line-height:1;display:flex;align-items:center;gap:4px}
+  .foto-rm{display:none;background:rgba(200,20,30,.85)}
+  .veh .nome{font-family:var(--display);font-weight:800;font-size:14.5px;margin-top:8px;line-height:1.15}
+  .veh .ver{font-size:12px;color:var(--tenue);margin-top:2px}
+  .veh .tag{display:inline-block;margin-top:8px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+  .tag.gpl{background:#e7f3ec;color:var(--verde)}
+  .tag.benz{background:#fde9ec;color:var(--rosso)}
+
+  .fuelbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px;padding:11px 14px;
+    background:#f4f6f7;border:1px solid var(--grigio-2);border-radius:12px;font-size:13.5px}
+  .fuelbar .pz{font-weight:600}
+  .fuelbar .pz b{font-family:var(--display);font-weight:800}
+  .fuelbar .val{font-variant-numeric:tabular-nums}
+  .fuelbar #refresh{margin-left:auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--grigio-2);
+    background:#fff;cursor:pointer;font-size:15px;color:var(--verde);line-height:1}
+  .fuelbar #refresh:active{transform:rotate(180deg)}
+  .fuelts{flex-basis:100%;font-size:11.5px;color:var(--tenue)}
+  .fuelts.loading{color:var(--verde-chiaro)}
+
+  .field{margin-bottom:13px}.field:last-child{margin-bottom:0}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .hint{font-weight:400;color:var(--tenue)}
+  input[type=text],input[type=number]{width:100%;font-family:var(--body);font-size:16px;background:#fafbfc;
+    border:1.5px solid var(--grigio-2);border-radius:10px;padding:12px 14px;transition:border-color .15s,box-shadow .15s}
+  input:focus{outline:none;border-color:var(--verde-chiaro);box-shadow:0 0 0 3px rgba(10,138,82,.15)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .with-suffix{position:relative}
+  .with-suffix .suffix{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--tenue);font-size:12.5px;font-weight:600;pointer-events:none}
+  .btn{width:100%;font-family:var(--display);font-weight:800;font-size:16px;color:#fff;background:var(--verde);
+    border:none;border-radius:12px;padding:15px;cursor:pointer;margin-top:4px;box-shadow:0 3px 0 var(--verde-scuro);
+    transition:transform .06s,box-shadow .06s,background .15s;display:flex;align-items:center;justify-content:center;gap:10px}
+  .btn:hover{background:var(--verde-chiaro)}
+  .btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--verde-scuro)}
+  .btn:disabled{opacity:.55;cursor:default;transform:none;box-shadow:0 3px 0 var(--verde-scuro)}
+  .btn svg{width:18px;height:18px}
+  .msg{font-size:13px;margin-top:12px;padding:10px 12px;border-radius:9px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:#fdeceb;color:#a12a1f;border:1px solid #f6c9c4}
+  .msg.ok{background:#e9f6ef;color:#0a6b40;border:1px solid #bfe6d1}
+  details{margin-top:16px;border-top:1px solid var(--grigio-2);padding-top:14px}
+  summary{font-size:13px;font-weight:600;color:var(--verde);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"\2699";font-size:14px}
+  .adv{margin-top:14px}
+
+  .results{display:grid;gap:14px;margin-top:20px}
+  .route{border-radius:16px;padding:18px 18px 16px;position:relative;overflow:hidden}
+  .route .top{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .route .top .ic{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .route .top .ic svg{width:15px;height:15px}
+  .route .rname{font-family:var(--display);font-weight:800;font-size:15px}
+  .route .badge{margin-left:auto;font-family:var(--body);font-weight:700;font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:20px;line-height:1.4}
+  .route.toll .badge.stima{background:rgba(255,255,255,.22);color:#fff}
+  .route.toll .badge.esatto{background:#fff;color:var(--verde)}
+  .route .totale{font-family:var(--display);font-weight:900;font-variant-numeric:tabular-nums;font-size:clamp(34px,9vw,46px);line-height:1;margin:6px 0 2px}
+  .route .totale small{font-size:.42em;margin-left:5px;font-weight:800}
+  .route .time-txt{font-family:var(--display);font-weight:700;font-size:14px;margin:2px 0 8px;display:flex;align-items:center;gap:7px}
+  .route .time-txt::before{content:"";width:15px;height:15px;flex:0 0 auto;background-repeat:no-repeat;background-position:center;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+  .route.free .time-txt::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300693c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+  .route .time-txt small{font-family:var(--body);font-weight:500;opacity:.82;font-size:12px}
+  .route .path-txt{font-size:12.5px;min-height:1em;margin-bottom:14px}
+  .bd{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border-radius:11px;overflow:hidden}
+  .bd .cell{padding:11px 8px;text-align:center}
+  .bd .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;opacity:.8}
+  .bd .v{font-family:var(--display);font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;margin-top:2px}
+  .route.toll{background:var(--verde);color:#fff;border:3px solid rgba(255,255,255,.9);box-shadow:0 16px 36px -22px rgba(0,60,30,.7)}
+  .route.toll .ic{background:rgba(255,255,255,.2)}
+  .route.toll .bd{background:rgba(255,255,255,.28)}
+  .route.toll .bd .cell{background:var(--verde)}
+  .route.free{background:var(--bianco);border:2px solid var(--grigio-2);color:var(--asfalto)}
+  .route.free .ic{background:#e7f3ec;color:var(--verde)}
+  .route.free .rname,.route.free .totale{color:var(--verde)}
+  .route.free .path-txt{color:var(--tenue)}
+  .route.free .bd{background:var(--grigio-2)}
+  .route.free .bd .cell{background:#fafbfc}
+  .route.free .bd .k{color:var(--tenue);opacity:1}
+  .maps{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  .maps a{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-family:var(--display);
+    font-weight:700;font-size:14px;padding:14px 10px;border-radius:12px;border:2px solid var(--grigio-2);color:var(--asfalto);
+    background:#fafbfc;transition:all .15s;text-align:center}
+  .maps a:hover{border-color:var(--verde);color:var(--verde)}
+  .maps a.disabled{opacity:.45;pointer-events:none}
+  .maps a svg{width:18px;height:18px;flex:0 0 auto}
+  .note{font-size:12.5px;color:var(--tenue);margin-top:18px;line-height:1.55;padding-left:13px;border-left:3px solid var(--grigio-2)}
+  .note b{color:var(--asfalto)}
+  @media (max-width:470px){.row,.maps{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v13"/><path d="M12 4v15"/></svg>
+      Autostrada
+    </span>
+    <h1>Costo del viaggio</h1>
+    <p class="sub">Prezzi carburante aggiornati all'apertura. Scegli il mezzo, inserisci il tragitto: costi con e senza pedaggi e link pronti per Google Maps.</p>
+  </header>
+
+  <div class="card">
+    <h2>Veicolo</h2>
+    <div class="veh-grid">
+      <!-- CAPTUR: bianca, tetto nero -->
+      <div class="veh sel" data-v="captur">
+        <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-11"/></svg></span>
+        <div class="media">
+          <button class="foto-btn" data-fv="captur">+ Foto</button>
+          <button class="foto-rm" data-rm="captur">&times; Rimuovi</button>
+          <img class="foto" data-fimg="captur" alt="foto Captur">
+          <svg class="icon" viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e3e6e9"/></linearGradient></defs>
+            <ellipse cx="122" cy="120" rx="104" ry="8" fill="rgba(0,0,0,.10)"/>
+            <path d="M24,101 L24,84 C24,78 28,75 34,74 L58,71 C66,59 79,53 94,52 L150,50 C171,50 190,58 206,71 L216,74 C221,76 223,80 223,89 L223,101 Z" fill="url(#cap)" stroke="#c2c7cc" stroke-width="1.5"/>
+            <path d="M68,72 L74,57 C81,48 91,44 101,43 L143,42 C158,42 168,48 176,60 L180,72 Z" fill="#17181a"/>
+            <path d="M92,70 L97,54 C102,48 109,46 117,46 L118,70 Z" fill="#addcee" opacity=".9"/>
+            <path d="M124,46 L140,46 C152,46 160,50 167,59 L124,70 Z" fill="#addcee" opacity=".9"/>
+            <path d="M121,47 L121,70" stroke="#17181a" stroke-width="2"/>
+            <rect x="104" y="76" width="14" height="3" rx="1.5" fill="#b8bdc2"/>
+            <path d="M24,101 L24,94 L223,94 L223,101 Z" fill="#2a2d31"/>
+            <path d="M223,80 q5,1 5,8 l-9,-1 Z" fill="#fff3c9"/>
+            <rect x="26" y="79" width="6" height="8" rx="2" fill="#d23b3b"/>
+            <circle cx="64" cy="103" r="26" fill="#2a2d31"/><circle cx="182" cy="103" r="26" fill="#2a2d31"/>
+            <circle cx="64" cy="103" r="21" fill="#161719"/><circle cx="64" cy="103" r="10.5" fill="#c7ccd1"/><circle cx="64" cy="103" r="3.6" fill="#6b7278"/>
+            <circle cx="182" cy="103" r="21" fill="#161719"/><circle cx="182" cy="103" r="10.5" fill="#c7ccd1"/><circle cx="182" cy="103" r="3.6" fill="#6b7278"/>
+          </svg>
+        </div>
+        <div class="nome">Renault Captur</div>
+        <div class="ver">Techno GPL &middot; 2024 &middot; bianca/tetto nero</div>
+        <span class="tag gpl">GPL</span>
+      </div>
+
+      <!-- DUCATI: ICON Yellow -->
+      <div class="veh" data-v="ducati">
+        <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-11"/></svg></span>
+        <div class="media">
+          <button class="foto-btn" data-fv="ducati">+ Foto</button>
+          <button class="foto-rm" data-rm="ducati">&times; Rimuovi</button>
+          <img class="foto" data-fimg="ducati" alt="foto Ducati">
+          <svg class="icon" viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="duc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9cd2e"/><stop offset="1" stop-color="#e0a600"/></linearGradient></defs>
+            <ellipse cx="120" cy="120" rx="104" ry="8" fill="rgba(0,0,0,.10)"/>
+            <line x1="186" y1="102" x2="150" y2="58" stroke="#3a3d41" stroke-width="5" stroke-linecap="round"/>
+            <line x1="192" y1="102" x2="156" y2="60" stroke="#5a5e63" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="118" y1="94" x2="54" y2="102" stroke="#3a3d41" stroke-width="6" stroke-linecap="round"/>
+            <path d="M150,60 L124,80 M150,60 L112,66 M108,66 L120,94 M132,66 L134,92" stroke="#8a8f95" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            <line x1="106" y1="70" x2="78" y2="96" stroke="#c9cdd2" stroke-width="3" stroke-linecap="round"/>
+            <path d="M98,90 C96,84 100,80 108,80 L132,80 C140,80 144,86 143,94 L142,102 C142,105 139,106 135,106 L104,106 C100,106 97,103 97,99 Z" fill="#4a4e53"/>
+            <path d="M104,80 L100,64 C100,61 103,60 108,60 L118,60 C121,60 122,62 122,65 L120,80 Z" fill="#5c6167"/>
+            <path d="M102,66 h20 M102,70 h20 M102,74 h20" stroke="#3a3d41" stroke-width="1.4"/>
+            <path d="M126,80 L142,70 C145,68 148,70 149,73 L142,88 L130,90 Z" fill="#5c6167"/>
+            <path d="M131,80 l14,-9 M133,84 l14,-9" stroke="#3a3d41" stroke-width="1.4"/>
+            <path d="M128,92 C138,98 140,104 132,108 L86,110 C80,110 78,105 84,104 L120,100" fill="none" stroke="#b9bdc2" stroke-width="5" stroke-linecap="round"/>
+            <path d="M78,82 C78,75 88,72 98,75 L100,90 C92,92 82,90 78,86 Z" fill="url(#duc)"/>
+            <path d="M100,74 C100,62 112,56 126,57 L142,61 C149,64 149,72 142,76 L108,80 C103,80 100,78 100,74 Z" fill="url(#duc)"/>
+            <path d="M108,62 C116,59 126,60 134,63" stroke="#fff" stroke-width="1.6" opacity=".5" fill="none" stroke-linecap="round"/>
+            <path d="M66,66 L100,63 L102,70 L72,72 C68,72 66,70 66,68 Z" fill="#2a2d31"/>
+            <path d="M64,66 C60,64 58,60 62,58 L70,60 L68,66 Z" fill="#2a2d31"/>
+            <line x1="150" y1="58" x2="150" y2="44" stroke="#3a3d41" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="142" y1="44" x2="160" y2="44" stroke="#3a3d41" stroke-width="3.5" stroke-linecap="round"/>
+            <circle cx="158" cy="60" r="10" fill="#2a2d31"/><circle cx="158" cy="60" r="6.5" fill="#fff2c7"/>
+            <path d="M170,90 A24,24 0 0,1 202,92" fill="none" stroke="#c9cdd2" stroke-width="4" stroke-linecap="round"/>
+            <g>
+              <circle cx="54" cy="102" r="25" fill="#161719"/><circle cx="54" cy="102" r="19" fill="none" stroke="#c7ccd1" stroke-width="2.5"/>
+              <line x1="35" y1="102" x2="73" y2="102" stroke="#aeb4ba" stroke-width="1.6"/><line x1="54" y1="83" x2="54" y2="121" stroke="#aeb4ba" stroke-width="1.6"/>
+              <line x1="41" y1="89" x2="67" y2="115" stroke="#aeb4ba" stroke-width="1.6"/><line x1="67" y1="89" x2="41" y2="115" stroke="#aeb4ba" stroke-width="1.6"/>
+              <circle cx="54" cy="102" r="4.5" fill="#6b7278"/>
+            </g>
+            <g>
+              <circle cx="189" cy="102" r="25" fill="#161719"/><circle cx="189" cy="102" r="19" fill="none" stroke="#c7ccd1" stroke-width="2.5"/>
+              <line x1="170" y1="102" x2="208" y2="102" stroke="#aeb4ba" stroke-width="1.6"/><line x1="189" y1="83" x2="189" y2="121" stroke="#aeb4ba" stroke-width="1.6"/>
+              <line x1="176" y1="89" x2="202" y2="115" stroke="#aeb4ba" stroke-width="1.6"/><line x1="202" y1="89" x2="176" y2="115" stroke="#aeb4ba" stroke-width="1.6"/>
+              <circle cx="189" cy="102" r="4.5" fill="#6b7278"/>
+            </g>
+          </svg>
+        </div>
+        <div class="nome">Ducati Scrambler</div>
+        <div class="ver">Icon 800 &middot; 2015 &middot; ICON Yellow</div>
+        <span class="tag benz">Benzina</span>
+      </div>
+    </div>
+
+    <div class="fuelbar">
+      <span class="pz">Benzina <b class="val" id="p-benz">&mdash;</b> &euro;/L</span>
+      <span class="pz">GPL <b class="val" id="p-gpl">&mdash;</b> &euro;/L</span>
+      <button id="refresh" title="Aggiorna prezzi">&#8635;</button>
+      <div class="fuelts" id="fuelts">Prezzi in aggiornamento&hellip;</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Percorso</h2>
+    <div class="field"><label for="da">Partenza</label><input type="text" id="da" placeholder="es. Massa" autocomplete="off"></div>
+    <div class="field"><label for="a">Destinazione</label><input type="text" id="a" placeholder="es. Firenze" autocomplete="off"></div>
+    <button class="btn" id="calc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      Calcola distanza e costi
+    </button>
+    <div class="msg" id="msg"></div>
+
+    <details id="adv-wrap">
+      <summary>Parametri e impostazioni</summary>
+      <div class="adv">
+        <div class="row">
+          <div class="field"><label for="km">Distanza <span class="hint">(auto/manuale)</span></label><div class="with-suffix"><input type="number" id="km" min="0" step="1" placeholder="0"><span class="suffix">km</span></div></div>
+          <div class="field"><label for="cons">Consumo</label><div class="with-suffix"><input type="number" id="cons" min="0" step="0.1"><span class="suffix">L/100</span></div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="prezzo">Prezzo carburante</label><div class="with-suffix"><input type="number" id="prezzo" min="0" step="0.01"><span class="suffix">&euro;/L</span></div></div>
+          <div class="field"><label for="tariffa">Tariffa pedaggio</label><div class="with-suffix"><input type="number" id="tariffa" min="0" step="0.005" value="0.075"><span class="suffix">&euro;/km</span></div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="quota">Quota autostrada</label><div class="with-suffix"><input type="number" id="quota" min="0" max="100" step="5" value="85"><span class="suffix">%</span></div></div>
+          <div class="field"><label for="extra">Extra senza pedaggi</label><div class="with-suffix"><input type="number" id="extra" min="0" step="1" value="18"><span class="suffix">%</span></div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="velAuto">Vel. media autostrada</label><div class="with-suffix"><input type="number" id="velAuto" min="20" step="5" value="105"><span class="suffix">km/h</span></div></div>
+          <div class="field"><label for="velFree">Vel. media senza pedaggi</label><div class="with-suffix"><input type="number" id="velFree" min="20" step="5" value="68"><span class="suffix">km/h</span></div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="pausaOgni">Sosta ogni</label><div class="with-suffix"><input type="number" id="pausaOgni" min="10" step="10" value="200"><span class="suffix">km</span></div></div>
+          <div class="field"><label for="pausaMin">Durata sosta</label><div class="with-suffix"><input type="number" id="pausaMin" min="0" step="5" value="15"><span class="suffix">min</span></div></div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="results" id="results" style="display:none">
+    <div class="route toll">
+      <div class="top"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M12 5v14"/></svg></span><span class="rname">Percorso con pedaggi</span><span class="badge stima" id="toll-badge"></span></div>
+      <div class="totale"><span id="t-tot">0,00</span><small>&euro;</small></div>
+      <div class="time-txt" id="t-time"></div>
+      <div class="path-txt" id="t-path"></div>
+      <div class="bd">
+        <div class="cell"><div class="k">Distanza</div><div class="v"><span id="t-km">0</span> km</div></div>
+        <div class="cell"><div class="k">Carburante</div><div class="v"><span id="t-carb">0,00</span> &euro;</div></div>
+        <div class="cell"><div class="k">Pedaggio</div><div class="v"><span id="t-ped">0,00</span> &euro;</div></div>
+      </div>
+    </div>
+    <div class="route free">
+      <div class="top"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span><span class="rname">Pedaggi al minimo</span></div>
+      <div class="totale"><span id="f-tot">0,00</span><small>&euro;</small></div>
+      <div class="time-txt" id="f-time"></div>
+      <div class="path-txt" id="f-path">Percorso pi&ugrave; lungo, senza autostrada a pagamento</div>
+      <div class="bd">
+        <div class="cell"><div class="k">Distanza</div><div class="v"><span id="f-km">0</span> km</div></div>
+        <div class="cell"><div class="k">Carburante</div><div class="v"><span id="f-carb">0,00</span> &euro;</div></div>
+        <div class="cell"><div class="k">Pedaggio</div><div class="v"><span id="f-ped">0,00</span> &euro;</div></div>
+      </div>
+    </div>
+    <div class="maps">
+      <a id="map-toll" class="disabled" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        Maps &middot; con pedaggi
+      </a>
+      <a id="map-free" class="disabled" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        Maps &middot; evita pedaggi
+      </a>
+    </div>
+  </div>
+
+  <p class="note">
+    <b>Prezzi carburante.</b> All'apertura l'app prova a scaricare i prezzi medi dei distributori (benzina e GPL) e, dopo il calcolo del percorso, li aggiorna sulla zona di partenza. Se il browser blocca la connessione usa valori di riferimento aggiornabili a mano. <b>Pedaggio:</b> se la funzione TollGuru &egrave; attiva (chiave configurata su Netlify) mostra l'importo <b>esatto</b> con badge &laquo;esatto&raquo;; altrimenti resta una stima Classe A con badge &laquo;stima&raquo;. La distanza <b>senza pedaggi</b> &egrave; stimata con la % extra impostata. <b>Tempo:</b> per il percorso con pedaggi usa la durata reale del routing, per gli altri casi le velocit&agrave; medie impostate; a entrambi aggiunge una sosta di 15 min ogni 200 km (valori modificabili). I <b>link Maps</b> si aprono nell'app su iPhone.
+  </p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0=n=>n.toLocaleString('it-IT',{maximumFractionDigits:0});
+const fmt3=n=>n.toLocaleString('it-IT',{minimumFractionDigits:3,maximumFractionDigits:3});
+
+const vehicles={captur:{fuel:'gpl',consumo:7.8,tariffa:0.075},ducati:{fuel:'benzina',consumo:5.5,tariffa:0.075}};
+const FALLBACK={benzina:1.98,gpl:0.76};
+let sel='captur';
+let live={benzina:FALLBACK.benzina,gpl:FALLBACK.gpl,src:'rif'};
+let priceTouched=false;
+const DEFAULT_COORD={lat:43.77,lon:11.20};
+
+/* ---- foto veicoli ---- */
+function initPhotos(){
+  ['captur','ducati'].forEach(v=>{
+    let data=null; try{data=localStorage.getItem('foto_'+v);}catch(e){}
+    if(data) setPhoto(v,data);
+  });
+}
+function setPhoto(v,data){
+  const card=document.querySelector('.veh[data-v="'+v+'"]');
+  card.querySelector('.foto[data-fimg="'+v+'"]').src=data;
+  card.querySelector('.foto[data-fimg="'+v+'"]').style.display='block';
+  card.querySelector('svg.icon').style.display='none';
+  card.querySelector('.foto-btn').style.display='none';
+  card.querySelector('.foto-rm').style.display='flex';
+}
+function clearPhoto(v){
+  const card=document.querySelector('.veh[data-v="'+v+'"]');
+  card.querySelector('.foto[data-fimg="'+v+'"]').style.display='none';
+  card.querySelector('svg.icon').style.display='block';
+  card.querySelector('.foto-btn').style.display='flex';
+  card.querySelector('.foto-rm').style.display='none';
+  try{localStorage.removeItem('foto_'+v);}catch(e){}
+}
+function pickPhoto(v){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+  inp.onchange=()=>{const f=inp.files[0]; if(!f)return; const rd=new FileReader();
+    rd.onload=()=>{setPhoto(v,rd.result); try{localStorage.setItem('foto_'+v,rd.result);}catch(e){}};
+    rd.readAsDataURL(f);};
+  inp.click();
+}
+document.querySelectorAll('.foto-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();pickPhoto(b.dataset.fv);}));
+document.querySelectorAll('.foto-rm').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();clearPhoto(b.dataset.rm);}));
+
+/* ---- veicoli ---- */
+document.querySelectorAll('.veh').forEach(el=>el.addEventListener('click',()=>{
+  document.querySelectorAll('.veh').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel'); sel=el.dataset.v; loadVehicle();
+}));
+function loadVehicle(){
+  $('cons').value=vehicles[sel].consumo;
+  $('tariffa').value=vehicles[sel].tariffa;
+  priceTouched=false; applyPrice(); compute();
+}
+function applyPrice(){
+  $('p-benz').textContent=fmt3(live.benzina);
+  $('p-gpl').textContent=fmt3(live.gpl);
+  if(!priceTouched){ $('prezzo').value=live[vehicles[sel].fuel]; }
+}
+
+/* ---- prezzi live ---- */
+function setStatus(t,cls){const e=$('fuelts');e.textContent=t;e.className='fuelts'+(cls?' '+cls:'');}
+function cachePrices(){try{localStorage.setItem('fuel',JSON.stringify({b:live.benzina,g:live.gpl,ts:Date.now()}));}catch(e){}}
+function loadCache(){try{const c=JSON.parse(localStorage.getItem('fuel'));if(c){live.benzina=c.b;live.gpl=c.g;}}catch(e){}}
+async function fetchFuelAvg(fuel,lat,lon){
+  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),7000);
+  try{
+    const url='https://prezzi-carburante.onrender.com/api/distributori?latitude='+lat+'&longitude='+lon+'&distance=25&fuel='+fuel+'&results=8';
+    const r=await fetch(url,{signal:ctrl.signal});
+    const arr=await r.json();
+    clearTimeout(to);
+    if(!Array.isArray(arr)||!arr.length) return null;
+    const ps=arr.map(x=>x.prezzo).filter(p=>p>0);
+    if(!ps.length) return null;
+    return Math.round(ps.reduce((a,b)=>a+b,0)/ps.length*1000)/1000;
+  }catch(e){clearTimeout(to);return null;}
+}
+async function autoUpdate(lat,lon){
+  setStatus('Aggiornamento prezzi\u2026','loading');
+  const [b,g]=await Promise.all([fetchFuelAvg('benzina',lat,lon),fetchFuelAvg('gpl',lat,lon)]);
+  let ok=false;
+  if(b){live.benzina=b;ok=true;} if(g){live.gpl=g;ok=true;}
+  applyPrice();
+  if(ok){live.src='live';cachePrices();
+    setStatus('Aggiornati \u00b7 media distributori vicini \u00b7 '+new Date().toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),'');
+  }else{
+    setStatus('Connessione non disponibile: prezzi di riferimento (modificabili a mano).','');
+  }
+}
+
+/* ---- maps ---- */
+function mapsUrl(o,d,avoid){let u='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(o)+'&destination='+encodeURIComponent(d)+'&travelmode=driving';if(avoid)u+='&avoid=tolls';return u;}
+function refreshMaps(){const o=$('da').value.trim(),d=$('a').value.trim(),t=$('map-toll'),f=$('map-free');
+  if(o&&d){t.href=mapsUrl(o,d,false);t.classList.remove('disabled');f.href=mapsUrl(o,d,true);f.classList.remove('disabled');}
+  else{t.classList.add('disabled');f.classList.add('disabled');}}
+
+/* ---- pedaggio esatto (Netlify Function -> TollGuru) ---- */
+const TOLL_API='/.netlify/functions/pedaggio';
+let exactToll=null, tollLoading=false;
+function routeKey(){return ($('da').value.trim()+'|'+$('a').value.trim()).toLowerCase();}
+function setBadge(txt,cls){const b=$('toll-badge');if(!b)return;b.textContent=txt;b.className='badge '+(cls||'');}
+async function fetchExactToll(){
+  const from=$('da').value.trim(),to=$('a').value.trim(); if(!from||!to)return;
+  const key=routeKey(); tollLoading=true; setBadge('calcolo\u2026','stima');
+  try{
+    const r=await fetch(TOLL_API+'?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to)+'&vehicle=2AxlesAuto');
+    const d=await r.json();
+    if(d && d.configured!==false && typeof d.toll==='number'){ exactToll={value:d.toll,cur:d.currency||'EUR',key}; }
+    else { exactToll=null; }
+  }catch(e){ exactToll=null; }
+  tollLoading=false; compute();
+}
+
+/* ---- calcolo ---- */
+let osrmDurationMin=null;
+function fmtDur(mins){mins=Math.round(mins);const h=Math.floor(mins/60),m=mins%60;if(h&&m)return h+' h '+m+' min';if(h)return h+' h';return m+' min';}
+function timeLine(km,drivingMin){
+  const ogni=parseFloat($('pausaOgni').value)||200, dur=parseFloat($('pausaMin').value)||0;
+  const nBreaks=km>0?Math.max(0,Math.ceil(km/ogni)-1):0;
+  const breakMin=nBreaks*dur, tot=drivingMin+breakMin;
+  let ex='';
+  if(nBreaks>0) ex=' <small>guida '+fmtDur(drivingMin)+' + '+nBreaks+' sosta'+(nBreaks>1?'e':'')+' ('+breakMin+' min)</small>';
+  return 'Tempo '+fmtDur(tot)+ex;
+}
+function compute(){
+  const km=parseFloat($('km').value)||0,cons=parseFloat($('cons').value)||0,prezzo=parseFloat($('prezzo').value)||0;
+  const tar=parseFloat($('tariffa').value)||0,quota=(parseFloat($('quota').value)||0)/100,extra=(parseFloat($('extra').value)||0)/100;
+  const velA=parseFloat($('velAuto').value)||105, velF=parseFloat($('velFree').value)||68;
+  const carbT=km/100*cons*prezzo;
+  let pedT, tollEx=false;
+  if(exactToll && exactToll.key===routeKey()){ pedT=exactToll.value; tollEx=true; }
+  else { pedT=km*quota*tar; }
+  if(!tollLoading) setBadge(km>0?(tollEx?'esatto':'stima'):'', tollEx?'esatto':'stima');
+  $('t-km').textContent=fmt0(km);$('t-carb').textContent=fmt(carbT);$('t-ped').textContent=fmt(pedT);$('t-tot').textContent=fmt(carbT+pedT);
+  const kmF=km*(1+extra), carbF=kmF/100*cons*prezzo;
+  $('f-km').textContent=fmt0(kmF);$('f-carb').textContent=fmt(carbF);$('f-ped').textContent=fmt(0);$('f-tot').textContent=fmt(carbF);
+  if(km>0){
+    const driveT=osrmDurationMin!=null?osrmDurationMin:km/velA*60;
+    const driveF=kmF/velF*60;
+    $('t-time').innerHTML=timeLine(km,driveT);
+    $('f-time').innerHTML=timeLine(kmF,driveF);
+    $('results').style.display='grid';
+  }
+  refreshMaps();
+}
+['cons','tariffa','quota','extra','velAuto','velFree','pausaOgni','pausaMin'].forEach(id=>$(id).addEventListener('input',compute));
+$('km').addEventListener('input',()=>{osrmDurationMin=null;compute();});
+$('prezzo').addEventListener('input',()=>{priceTouched=true;compute();});
+['da','a'].forEach(id=>$(id).addEventListener('input',()=>{exactToll=null;refreshMaps();}));
+$('refresh').addEventListener('click',()=>autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon));
+
+function showMsg(t,type){const m=$('msg');m.textContent=t;m.className='msg show '+type;}
+async function geocode(q){
+  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=it&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});
+  const d=await r.json(); if(!d.length)throw new Error('"'+q+'" non trovato');
+  return {lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name.split(',')[0]};
+}
+async function routeKm(a,b){
+  const r=await fetch('https://router.project-osrm.org/route/v1/driving/'+a.lon+','+a.lat+';'+b.lon+','+b.lat+'?overview=false');
+  const d=await r.json(); if(d.code!=='Ok'||!d.routes.length)throw new Error('percorso non calcolabile');
+  return {km:d.routes[0].distance/1000, durMin:d.routes[0].duration/60};
+}
+$('calc').addEventListener('click',async()=>{
+  const da=$('da').value.trim(),a=$('a').value.trim();
+  if(!da||!a){showMsg('Inserisci partenza e destinazione.','err');return;}
+  const btn=$('calc');btn.disabled=true;showMsg('Calcolo del percorso in corso\u2026','ok');$('adv-wrap').open=true;
+  try{
+    const [p1,p2]=await Promise.all([geocode(da),geocode(a)]);
+    const rt=await routeKm(p1,p2);
+    osrmDurationMin=rt.durMin;
+    $('km').value=Math.round(rt.km);
+    $('t-path').textContent=p1.name+'  \u2192  '+p2.name;
+    showMsg('Percorso trovato: circa '+Math.round(rt.km)+' km. Aggiorno i prezzi sulla zona di partenza\u2026','ok');
+    compute();
+    fetchExactToll();
+    autoUpdate(p1.lat,p1.lon);
+  }catch(e){
+    showMsg('Calcolo automatico non disponibile ('+e.message+'). Inserisci i km a mano: costi e link Maps funzionano lo stesso.','err');
+    $('results').style.display='grid'; refreshMaps();
+  }finally{btn.disabled=false;}
+});
+
+/* ---- init ---- */
+initPhotos();
+loadCache();
+loadVehicle();
+autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon);
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Costo Viaggio",
+  "short_name": "Costo Viaggio",
+  "description": "Km, carburante e pedaggi per Captur GPL e Ducati Scrambler",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eceef0",
+  "theme_color": "#00693c",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
