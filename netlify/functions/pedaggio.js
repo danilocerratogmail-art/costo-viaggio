@@ -1,68 +1,46 @@
-// Netlify Function: pedaggio esatto via Google Routes API (con diagnostica)
+// Netlify Function: pedaggio esatto via HERE Routing API v8 (chiave lato server)
 exports.handler = async (event) => {
   const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
   const q = event.queryStringParameters || {};
   const from = (q.from || "").trim();
   const to   = (q.to   || "").trim();
   if (!from || !to) return { statusCode: 400, headers, body: JSON.stringify({ error: "from/to mancanti" }) };
-
-  const KEY = process.env.GOOGLE_MAPS_KEY;
+  const KEY = process.env.HERE_API_KEY;
   if (!KEY) return { statusCode: 200, headers, body: JSON.stringify({ configured: false }) };
-
-  const body = {
-    origin: { address: from },
-    destination: { address: to },
-    travelMode: "DRIVE",
-    routingPreference: "TRAFFIC_AWARE",
-    extraComputations: ["TOLLS"],
-    routeModifiers: { vehicleInfo: { emissionType: "GASOLINE" } },
-    units: "METRIC",
-    languageCode: "it-IT",
-    regionCode: "IT"
+  const geo = async (place) => {
+    const u = "https://geocode.search.hereapi.com/v1/geocode?in=countryCode:ITA&q=" + encodeURIComponent(place) + "&apiKey=" + KEY;
+    const r = await fetch(u);
+    const d = await r.json().catch(() => ({}));
+    const it = d.items && d.items[0];
+    if (!it || !it.position) throw new Error("luogo non trovato: " + place);
+    return it.position.lat + "," + it.position.lng;
   };
-
-  const extract = (adv) => {
-    const ti = adv && adv.tollInfo;
-    if (!ti) return { present: false, price: null, currency: null };
-    const ep = ti.estimatedPrice;
-    if (Array.isArray(ep) && ep.length) {
-      const p = ep[0];
-      return { present: true, price: Number(p.units || 0) + Number(p.nanos || 0) / 1e9, currency: p.currencyCode || "EUR" };
-    }
-    return { present: true, price: null, currency: null };
-  };
-
   try {
-    const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": KEY,
-        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.travelAdvisory.tollInfo,routes.legs.travelAdvisory.tollInfo"
-      },
-      body: JSON.stringify(body)
-    });
+    const origin = await geo(from);
+    const dest   = await geo(to);
+    const u = "https://router.hereapi.com/v8/routes?transportMode=car" +
+              "&origin=" + origin + "&destination=" + dest +
+              "&return=summary,tolls&tolls[summaries]=total&currency=EUR&departureTime=any" +
+              "&apiKey=" + KEY;
+    const r = await fetch(u);
     const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const msg = (data && data.error && data.error.message) || ("HTTP " + r.status);
-      return { statusCode: 502, headers, body: JSON.stringify({ configured: true, found: false, error: msg }) };
-    }
     const route = data.routes && data.routes[0];
-    if (!route) return { statusCode: 200, headers, body: JSON.stringify({ configured: true, found: false }) };
-
-    let info = extract(route.travelAdvisory);
-    if (!info.present && Array.isArray(route.legs)) {
-      for (const leg of route.legs) { const li = extract(leg.travelAdvisory); if (li.present) { info = li; break; } }
+    if (!route) {
+      const msg = data.title || (data.error && (data.error_description || data.error)) || "percorso non trovato";
+      return { statusCode: 200, headers, body: JSON.stringify({ configured: true, found: false, error: msg }) };
     }
-    let tollState, toll = null, currency = "EUR", found = false, hasTolls = false;
-    if (!info.present) { tollState = "none"; toll = 0; found = true; }
-    else if (info.price != null) { tollState = "priced"; toll = Math.round(info.price * 100) / 100; currency = info.currency || "EUR"; found = true; hasTolls = true; }
-    else { tollState = "present_no_price"; hasTolls = true; }
-
-    const distanceKm = route.distanceMeters ? Math.round(route.distanceMeters / 1000) : null;
-    const durationMin = route.duration ? Math.round(parseInt(String(route.duration), 10) / 60) : null;
-
-    return { statusCode: 200, headers, body: JSON.stringify({ configured: true, found, toll, currency, hasTolls, tollState, distanceKm, durationMin, source: "google" }) };
+    let toll = 0, currency = "EUR", hasTolls = false, meters = 0, seconds = 0;
+    for (const s of (route.sections || [])) {
+      const sum = s.summary || {};
+      meters  += sum.length   || 0;
+      seconds += sum.duration || 0;
+      const t = sum.tolls && sum.tolls.total;
+      if (t && typeof t.value === "number") { toll += t.value; currency = t.currency || "EUR"; if (t.value > 0) hasTolls = true; }
+    }
+    return {
+      statusCode: 200, headers,
+      body: JSON.stringify({ configured: true, found: true, toll: Math.round(toll * 100) / 100, currency, hasTolls, distanceKm: meters ? Math.round(meters / 1000) : null, durationMin: seconds ? Math.round(seconds / 60) : null, source: "here" })
+    };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ configured: true, found: false, error: String(e) }) };
   }
