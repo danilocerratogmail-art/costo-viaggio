@@ -1,79 +1,59 @@
-// Netlify Function: proxy sicuro verso TollGuru (la chiave resta lato server)
-// Richiesta:  /.netlify/functions/pedaggio?from=Massa&to=Firenze&vehicle=2AxlesAuto
-// Risposta:   { configured:true, found:true, toll:12.3, currency:"EUR", hasTolls:true, distanceKm:..., source:"tollguru" }
-
+// Netlify Function: pedaggio esatto via Google Routes API (chiave lato server)
 exports.handler = async (event) => {
   const headers = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
   const q = event.queryStringParameters || {};
   const from = (q.from || "").trim();
   const to   = (q.to   || "").trim();
-  const vehicle = (q.vehicle || "2AxlesAuto").trim();  // Italia: Classe A (vale anche per le moto)
-
   if (!from || !to) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: "Parametri 'from' e 'to' obbligatori" }) };
   }
-
-  const KEY = process.env.TOLLGURU_KEY;
+  const KEY = process.env.GOOGLE_MAPS_KEY;
   if (!KEY) {
-    // Nessuna chiave impostata: l'app userà la stima
     return { statusCode: 200, headers, body: JSON.stringify({ configured: false }) };
   }
-
-  const BASE = process.env.TOLLGURU_URL || "https://apis.tollguru.com/toll/v2";
-  const url  = BASE.replace(/\/+$/,"") + "/origin-destination-waypoints";
-
+  const url = "https://routes.googleapis.com/directions/v2:computeRoutes";
   const body = {
-    from: { address: from },
-    to:   { address: to },
-    serviceProvider: "gmaps",
-    vehicle: { type: vehicle }
+    origin: { address: from },
+    destination: { address: to },
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_UNAWARE",
+    extraComputations: ["TOLLS"],
+    units: "METRIC",
+    languageCode: "it-IT",
+    regionCode: "IT"
   };
-
-  const pickNum = (...vals) => {
-    for (const v of vals) { const n = Number(v); if (Number.isFinite(n) && n >= 0) return n; }
-    return null;
-  };
-
   try {
     const r = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": KEY },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": KEY,
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.travelAdvisory.tollInfo"
+      },
       body: JSON.stringify(body)
     });
     const data = await r.json().catch(() => ({}));
-
     if (!r.ok) {
-      return { statusCode: 502, headers, body: JSON.stringify({ configured: true, found: false, error: "TollGuru", status: r.status, detail: data }) };
+      const msg = (data && data.error && data.error.message) || ("HTTP " + r.status);
+      return { statusCode: 502, headers, body: JSON.stringify({ configured: true, found: false, error: msg }) };
     }
-
-    const route = data.route || (Array.isArray(data.routes) ? data.routes[0] : null);
+    const route = data.routes && data.routes[0];
     if (!route) {
       return { statusCode: 200, headers, body: JSON.stringify({ configured: true, found: false }) };
     }
-
-    const costs = route.costs || {};
-    const toll = pickNum(costs.cash, costs.tag, costs.minimumTollCost, costs.licensePlate, costs.prepaidCard);
-    const currency = costs.currency || (route.summary && route.summary.currency) || "EUR";
-
-    let distanceKm = null;
-    const dist = route.summary && route.summary.distance;
-    if (dist) {
-      if (Number.isFinite(dist.metric)) distanceKm = Math.round(dist.metric);
-      else if (Number.isFinite(dist.value)) distanceKm = Math.round(dist.value > 5000 ? dist.value / 1000 : dist.value);
+    let toll = 0, currency = "EUR", hasTolls = false;
+    const ti = route.travelAdvisory && route.travelAdvisory.tollInfo;
+    if (ti && Array.isArray(ti.estimatedPrice) && ti.estimatedPrice.length) {
+      const p = ti.estimatedPrice[0];
+      toll = Number(p.units || 0) + Number(p.nanos || 0) / 1e9;
+      currency = p.currencyCode || "EUR";
+      hasTolls = toll > 0;
     }
-
+    const distanceKm = route.distanceMeters ? Math.round(route.distanceMeters / 1000) : null;
+    const durationMin = route.duration ? Math.round(parseInt(String(route.duration), 10) / 60) : null;
     return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        configured: true,
-        found: toll !== null,
-        toll,
-        currency,
-        hasTolls: route.hasTolls !== undefined ? route.hasTolls : (toll > 0),
-        distanceKm,
-        source: "tollguru"
-      })
+      statusCode: 200, headers,
+      body: JSON.stringify({ configured: true, found: true, toll: Math.round(toll * 100) / 100, currency, hasTolls, distanceKm, durationMin, source: "google" })
     };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ configured: true, found: false, error: String(e) }) };
