@@ -127,6 +127,24 @@
   .route.free .bd{background:var(--grigio-2)}
   .route.free .bd .cell{background:#fafbfc}
   .route.free .bd .k{color:var(--tenue);opacity:1}
+  .ar{background:var(--bianco);border:2px solid var(--grigio-2);border-radius:16px;padding:16px 18px}
+  .ar-h{font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-bottom:12px}
+  .ar-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ar-cell{background:#f4f6f7;border-radius:11px;padding:12px;text-align:center}
+  .ar-k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;color:var(--tenue)}
+  .ar-v{font-family:var(--display);font-weight:900;font-size:22px;font-variant-numeric:tabular-nums;margin-top:3px}
+  .ar-diff{margin-top:12px;text-align:center;font-size:13.5px;padding:10px;border-radius:11px}
+  .ar-diff b{font-variant-numeric:tabular-nums;font-family:var(--display)}
+  .ar-diff.save{background:#e7f3ec;color:var(--verde)}
+  .ar-diff.cost{background:#fdf0e6;color:#c8641f}
+  .ar-diff.same{background:#f4f6f7;color:var(--tenue)}
+  .verdict{background:var(--bianco);border:2px solid var(--grigio-2);border-radius:16px;padding:16px 18px}
+  .verdict-head{font-family:var(--display);font-weight:800;font-size:15px;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+  .verdict-head svg{width:18px;height:18px;flex:0 0 auto}
+  .verdict-head.good{color:var(--verde)}
+  .verdict-head.mixed{color:#c8641f}
+  .verdict-line{font-size:13.5px;color:var(--asfalto);line-height:1.55;margin-top:5px}
+  .verdict-line b{font-variant-numeric:tabular-nums}
   .maps{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
   .maps a{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-family:var(--display);
     font-weight:700;font-size:14px;padding:14px 10px;border-radius:12px;border:2px solid var(--grigio-2);color:var(--asfalto);
@@ -300,6 +318,22 @@
         <div class="cell"><div class="k">Pedaggio</div><div class="v"><span id="f-ped">0,00</span> &euro;</div></div>
       </div>
     </div>
+    <div class="ar">
+      <div class="ar-h">Andata e ritorno (A/R)</div>
+      <div class="ar-grid">
+        <div class="ar-cell"><div class="ar-k">Con pedaggi</div><div class="ar-v"><span id="ar-toll">0,00</span> &euro;</div></div>
+        <div class="ar-cell"><div class="ar-k">Senza pedaggi</div><div class="ar-v"><span id="ar-free">0,00</span> &euro;</div></div>
+      </div>
+      <div class="ar-diff same" id="ar-diff-box"><span id="ar-diff-label">Differenza</span> <b><span id="ar-diff">0,00</span> &euro;</b></div>
+    </div>
+    <div class="verdict" id="verdict">
+      <div class="verdict-head good" id="verdict-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 6a3 3 0 0 0 6 0L6 7Zm12 0l-3 6a3 3 0 0 0 6 0l-3-6Z"/></svg>
+        <span id="verdict-head-txt">&mdash;</span>
+      </div>
+      <p class="verdict-line" id="verdict-cost"></p>
+      <p class="verdict-line" id="verdict-time"></p>
+    </div>
     <div class="maps">
       <a id="map-toll" class="disabled" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -313,7 +347,7 @@
   </div>
 
   <p class="note">
-    <b>Prezzi carburante.</b> All'apertura l'app prova a scaricare i prezzi medi dei distributori (benzina e GPL) e, dopo il calcolo del percorso, li aggiorna sulla zona di partenza. Se il browser blocca la connessione usa valori di riferimento aggiornabili a mano. <b>Pedaggio:</b> se la funzione TollGuru &egrave; attiva (chiave configurata su Netlify) mostra l'importo <b>esatto</b> con badge &laquo;esatto&raquo;; altrimenti resta una stima Classe A con badge &laquo;stima&raquo;. La distanza <b>senza pedaggi</b> &egrave; stimata con la % extra impostata. <b>Tempo:</b> per il percorso con pedaggi usa la durata reale del routing, per gli altri casi le velocit&agrave; medie impostate; a entrambi aggiunge una sosta di 15 min ogni 200 km (valori modificabili). I <b>link Maps</b> si aprono nell'app su iPhone.
+    <b>Prezzi carburante.</b> All'apertura l'app prova a scaricare i prezzi medi dei distributori (benzina e GPL) e, dopo il calcolo del percorso, li aggiorna sulla zona di partenza. Se il browser blocca la connessione usa valori di riferimento aggiornabili a mano. <b>Pedaggio:</b> se la funzione dei pedaggi (HERE) &egrave; attiva mostra l'importo <b>esatto</b> con badge &laquo;esatto&raquo;; altrimenti resta una stima Classe A con badge &laquo;stima&raquo;. La distanza <b>senza pedaggi</b> &egrave; stimata con la % extra impostata. <b>Andata/ritorno:</b> i totali A/R sono il doppio del solo andata; la differenza indica se evitare i pedaggi conviene o no (il percorso senza pedaggi &egrave; pi&ugrave; lungo, quindi non sempre &egrave; pi&ugrave; economico). <b>Tempo:</b> per il percorso con pedaggi usa la durata reale del routing, per gli altri casi le velocit&agrave; medie impostate; a entrambi aggiunge una sosta di 15 min ogni 200 km (valori modificabili). I <b>link Maps</b> si aprono nell'app su iPhone.
   </p>
 </div>
 
@@ -455,11 +489,35 @@ function compute(){
   $('t-km').textContent=fmt0(km);$('t-carb').textContent=fmt(carbT);$('t-ped').textContent=fmt(pedT);$('t-tot').textContent=fmt(carbT+pedT);
   const kmF=km*(1+extra), carbF=kmF/100*cons*prezzo;
   $('f-km').textContent=fmt0(kmF);$('f-carb').textContent=fmt(carbF);$('f-ped').textContent=fmt(0);$('f-tot').textContent=fmt(carbF);
+  const totT=carbT+pedT, totF=carbF, arT=totT*2, arF=totF*2, diff=arT-arF;
+  $('ar-toll').textContent=fmt(arT);$('ar-free').textContent=fmt(arF);$('ar-diff').textContent=fmt(Math.abs(diff));
+  const box=$('ar-diff-box'), lab=$('ar-diff-label');
+  if(diff>0.005){ box.className='ar-diff save'; lab.textContent='Evitando i pedaggi risparmi'; }
+  else if(diff<-0.005){ box.className='ar-diff cost'; lab.textContent='Evitare i pedaggi costa in pi\u00f9'; }
+  else { box.className='ar-diff same'; lab.textContent='Stesso costo A/R'; }
   if(km>0){
     const driveT=osrmDurationMin!=null?osrmDurationMin:km/velA*60;
     const driveF=kmF/velF*60;
     $('t-time').innerHTML=timeLine(km,driveT);
     $('f-time').innerHTML=timeLine(kmF,driveF);
+    const brk=(x)=>{const ogni=parseFloat($('pausaOgni').value)||200,dur=parseFloat($('pausaMin').value)||0,n=x>0?Math.max(0,Math.ceil(x/ogni)-1):0;return n*dur;};
+    const tollTot=driveT+brk(km), freeTot=driveF+brk(kmF);
+    const tDiff=freeTot-tollTot, cDiff=arT-arF;
+    let head,cls,cL,tL;
+    if(cDiff>0.5) cL='<b>Costo:</b> evitando i pedaggi risparmi <b>'+fmt(cDiff)+'\u00a0&euro;</b> in A/R.';
+    else if(cDiff<-0.5) cL='<b>Costo:</b> evitare i pedaggi costa <b>'+fmt(-cDiff)+'\u00a0&euro;</b> in pi\u00f9 in A/R: il giro pi\u00f9 lungo consuma pi\u00f9 carburante di quanto risparmi al casello.';
+    else cL='<b>Costo:</b> in A/R i due percorsi si equivalgono (differenza '+fmt(Math.abs(cDiff))+'\u00a0&euro;).';
+    if(tDiff>1) tL='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(tDiff)+'</b> in pi\u00f9 a tratta ('+fmtDur(tDiff*2)+' in A/R): l\'autostrada \u00e8 pi\u00f9 veloce.';
+    else if(tDiff<-1) tL='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(-tDiff)+'</b> in meno a tratta.';
+    else tL='<b>Tempo:</b> i due percorsi hanno tempi equivalenti.';
+    if(cDiff<=0.5 && tDiff>=-1){ head='Conviene l\'autostrada'; cls='good'; }
+    else if(cDiff>0.5 && tDiff<=1){ head='Conviene evitare i pedaggi'; cls='good'; }
+    else if(cDiff>0.5 && tDiff>1){ head='Dipende: risparmio contro tempo'; cls='mixed'; }
+    else { head='Valuta i due percorsi'; cls='mixed'; }
+    $('verdict-head-txt').textContent=head;
+    $('verdict-head').className='verdict-head '+cls;
+    $('verdict-cost').innerHTML=cL;
+    $('verdict-time').innerHTML=tL;
     $('results').style.display='grid';
   }
   refreshMaps();
