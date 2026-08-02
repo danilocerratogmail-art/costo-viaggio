@@ -308,6 +308,20 @@
     .tl-badge.f{background:#eef1f4;color:var(--tenue)}
     .tl-seg-c .tr-mid{color:#c8641f;font-weight:600}
     .tl-seg-c .tr-bad{color:#c8102e;font-weight:600}
+    .tl-seg-c .tl-ped{color:var(--verde);font-weight:600}
+    .tl-hint{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;font-family:var(--body);font-weight:600;font-size:13px;color:var(--verde);background:#eef6f0;border:1.5px dashed #bfe0cd;border-radius:10px;padding:9px;cursor:pointer;margin-bottom:12px}
+    .tl-hint svg{width:15px;height:15px}
+    .full{position:fixed;inset:0;background:#fff;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .full-bar{position:sticky;top:0;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);display:flex;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;border-bottom:1px solid var(--grigio-2)}
+    .full-btn{flex:1;font-family:var(--display);font-weight:700;font-size:14px;padding:12px;border-radius:10px;border:1.5px solid var(--grigio-2);background:#fafbfc;color:var(--asfalto);cursor:pointer}
+    .full-btn.primary{background:#25d366;color:#fff;border-color:#25d366}
+    .full-body{padding:18px 18px calc(44px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto}
+    .full-title{font-family:var(--display);font-weight:900;font-size:21px;line-height:1.15}
+    .full-title small{display:block;font-family:var(--body);font-weight:600;font-size:13px;color:var(--tenue);margin-top:3px}
+    #full-tl{margin-top:14px}
+    .full-tot{margin-top:14px;border-top:1px solid var(--grigio-2);padding-top:14px;font-size:14px;line-height:1.7;color:var(--asfalto)}
+    .full-tot b{font-family:var(--display)}
+    .full-tot .big{font-family:var(--display);font-weight:900;font-size:22px;color:var(--verde)}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
@@ -337,6 +351,7 @@
   </div>
 
   <div class="results" id="results" style="display:none">
+    <button class="tl-hint" id="tl-expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Tocca per ingrandire la mappa</button>
     <div id="legs"></div>
     <div class="grand">
       <div class="grand-h">Totale andata</div>
@@ -374,6 +389,18 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
         Apri in Google Maps
       </a>
+    </div>
+  </div>
+
+  <div class="full" id="full" style="display:none">
+    <div class="full-bar">
+      <button class="full-btn" id="full-close">&lsaquo; Torna all'app</button>
+      <button class="full-btn primary" id="full-share">Invia su WhatsApp</button>
+    </div>
+    <div class="full-body">
+      <div class="full-title" id="full-title"></div>
+      <div id="full-tl"></div>
+      <div class="full-tot" id="full-tot"></div>
     </div>
   </div>
 
@@ -494,14 +521,26 @@ function wxSvg(c){
   if(c>=95) return S+'<path d="M17 13H8a4 4 0 1 1 .8-7.9A5 5 0 0 1 19 6a3.5 3.5 0 0 1-2 7Z"/><path d="m12 14-2 4h3l-2 4"/></svg>';
   return S+'<path d="M17 14H8a4 4 0 1 1 .8-7.9A5 5 0 0 1 19 7a3.5 3.5 0 0 1-2 7Z"/><path d="M9 18l-1 2M13 18l-1 2M17 18l-1 2"/></svg>';
 }
+function wxWord(c){
+  if(c===0) return 'Sereno';
+  if(c<=2) return 'Poco nuv.';
+  if(c===3) return 'Nuvoloso';
+  if(c===45||c===48) return 'Nebbia';
+  if((c>=71&&c<=77)||c===85||c===86) return 'Neve';
+  if(c>=95) return 'Temporale';
+  if((c>=51&&c<=67)||(c>=80&&c<=82)) return 'Pioggia';
+  return 'Coperto';
+}
+let wxData={};
 async function loadWeather(coords){
+  wxData={};
   const lat=[],lng=[],idx=[];
   coords.forEach((c,i)=>{if(c&&c.lat!=null){lat.push(c.lat);lng.push(c.lng);idx.push(i);}});
   if(!lat.length)return;
   try{
     const r=await fetch('https://api.open-meteo.com/v1/forecast?current=temperature_2m,weather_code&latitude='+lat.join(',')+'&longitude='+lng.join(','));
     const d=await r.json(); const arr=Array.isArray(d)?d:[d];
-    arr.forEach((w,k)=>{const el=$('wx-'+idx[k]);if(el&&w&&w.current){el.innerHTML=wxSvg(w.current.weather_code)+'<span>'+Math.round(w.current.temperature_2m)+'\u00b0</span>';}});
+    arr.forEach((w,k)=>{if(w&&w.current){wxData[idx[k]]={t:w.current.temperature_2m,code:w.current.weather_code};const el=$('wx-'+idx[k]);if(el){el.innerHTML=wxSvg(w.current.weather_code)+'<span>'+Math.round(w.current.temperature_2m)+'\u00b0</span>';}}});
   }catch(e){}
 }
 function stopCoord(i){if(i<legData.length&&legData[i].from)return legData[i].from;if(legData.length)return legData[legData.length-1].to;return null;}
@@ -509,7 +548,7 @@ function computeTotals(){
   if(!legData)return;
   const cons=parseFloat($('cons').value)||0, prezzo=parseFloat($('prezzo').value)||0;
   const pts=stops.map(s=>s.trim());
-  let totKm=0,totToll=0,totFuel=0,totDrive=0; let rows=''; const coords=[];
+  let totKm=0,totToll=0,totFuel=0,totDrive=0; let rows=''; const coords=[]; const legsInfo=[];
   for(let i=0;i<pts.length;i++){
     const col=WXCOLORS[i%WXCOLORS.length];
     coords.push(stopCoord(i));
@@ -519,17 +558,19 @@ function computeTotals(){
       const useToll=legToll[i]!==false; const v=useToll?legData[i].toll:legData[i].free;
       const fuel=v.km/100*cons*prezzo, cost=fuel+v.toll, delay=Math.max(0,Math.round((v.min||0)-(v.base||0)));
       totKm+=v.km; totToll+=v.toll; totFuel+=fuel; totDrive+=v.min;
+      legsInfo.push({a:pts[i],b:pts[i+1],useToll:useToll,km:v.km,min:v.min,delay:delay,fuel:fuel,toll:v.toll});
       rows+='<div class="tl-row tl-seg-row '+(useToll?'toll':'free')+'"><div class="tl-rail"><span class="tl-line"></span></div>'
           +'<div class="tl-seg-c">'
           +'<span class="tl-badge '+(useToll?'t':'f')+'">'+(useToll?'autostrada':'senza pedaggio')+'</span>'
           +'<span>'+fmt0(v.km)+' km</span>'
           +'<span class="'+trafficCls(delay,v.min)+'">'+fmtDur(v.min)+(delay>0?' (+'+delay+' traffico)':'')+'</span>'
-          +'<span>'+fmt(cost)+' \u20ac</span>'
+          +'<span class="tl-carb">carburante '+fmt(fuel)+' \u20ac</span>'
+          +(v.toll>0?'<span class="tl-ped">pedaggio '+fmt(v.toll)+' \u20ac</span>':'')
           +'</div></div>';
     }
   }
   $('legs').innerHTML='<div class="tl">'+rows+'</div>';
-  loadWeather(coords);
+  loadWeather(coords).then(prepareShareImage);
   const totCost=totFuel+totToll;
   $('g-km').textContent=fmt0(totKm);$('g-carb').textContent=fmt(totFuel);$('g-ped').textContent=fmt(totToll);$('g-tot').textContent=fmt(totCost);
   $('g-time').innerHTML=timeLine(totKm,totDrive);
@@ -563,6 +604,10 @@ function computeTotals(){
   else if(timeDiff<-1) $('v-time').innerHTML='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(-timeDiff)+'</b> in meno in A/R.';
   else $('v-time').innerHTML='<b>Tempo:</b> tempi A/R quasi uguali con o senza pedaggi.';
   buildShare(pts,{totKm,totToll,totFuel,totDrive,totCost,arCost,tollAR,freeAR,costDiff,timeDiff});
+  tripInfo={veh:vehicles[sel].label, pts:pts.slice(), legs:legsInfo,
+    totals:{km:totKm,fuel:totFuel,toll:totToll,cost:totCost,drive:totDrive,arCost:arCost,arTime:arDrive+breaksMin(arKm)},
+    cmp:{tollAR:tollAR,freeAR:freeAR,costDiff:costDiff,timeDiff:timeDiff,headTxt:$('v-head-txt').textContent}};
+  prepareShareImage();
 }
 
 /* ---- condivisione ---- */
@@ -604,19 +649,97 @@ function buildShare(pts,t){
 
 function showMsg(t,type){const m=$('msg');m.textContent=t;m.className='msg show '+type;}
 
+/* ---- vista piena + immagine ---- */
+let tripInfo=null, shareFile=null;
+function fitText(x,str,maxW){ if(x.measureText(str).width<=maxW) return str; let s=str; while(s.length>1 && x.measureText(s+'\u2026').width>maxW) s=s.slice(0,-1); return s+'\u2026'; }
+function renderTripCanvas(){
+  if(!tripInfo) return null;
+  const t=tripInfo, s=2, W=760, padX=44, railX=padX+9;
+  const headH=118, rowStop=76, rowSeg=88, totH=200;
+  const H=headH + t.pts.length*rowStop + t.legs.length*rowSeg + totH + 30;
+  const cv=document.createElement('canvas'); cv.width=W*s; cv.height=H*s;
+  const x=cv.getContext('2d'); x.scale(s,s); x.textBaseline='alphabetic';
+  x.fillStyle='#fff'; x.fillRect(0,0,W,H);
+  x.fillStyle='#00693c'; x.fillRect(0,0,W,10);
+  let y=54;
+  x.fillStyle='#1b1f23'; x.font='800 30px Archivo, Inter, system-ui, sans-serif'; x.fillText('Costo Viaggio', padX, y); y+=24;
+  x.fillStyle='#6b7178'; x.font='600 17px Inter, system-ui, sans-serif'; x.fillText(t.veh, padX, y); y+=26;
+  x.fillStyle='#1b1f23'; x.font='700 18px Inter, system-ui, sans-serif'; x.fillText(fitText(x,t.pts.join('  \u2192  '),W-2*padX), padX, y);
+  const dotY=[]; let yy=headH; for(let i=0;i<t.pts.length;i++){ dotY[i]=yy+8; yy+=rowStop; if(i<t.legs.length) yy+=rowSeg; }
+  const segTop=[]; { let z=headH; for(let i=0;i<t.pts.length;i++){ z+=rowStop; if(i<t.legs.length){ segTop[i]=z; z+=rowSeg; } } }
+  for(let i=0;i<t.legs.length;i++){ x.beginPath(); x.moveTo(railX,dotY[i]+10); x.lineTo(railX,dotY[i+1]-10); x.lineWidth=3; x.strokeStyle=t.legs[i].useToll?'#00693c':'#9aa0a6'; x.setLineDash(t.legs[i].useToll?[]:[3,4]); x.stroke(); x.setLineDash([]); }
+  for(let i=0;i<t.pts.length;i++){
+    const col=WXCOLORS[i%WXCOLORS.length];
+    x.beginPath(); x.arc(railX,dotY[i],8,0,Math.PI*2); x.fillStyle=col; x.fill(); x.lineWidth=3; x.strokeStyle='#fff'; x.stroke();
+    x.fillStyle='#1b1f23'; x.font='800 19px Archivo, Inter, sans-serif'; x.fillText(fitText(x,t.pts[i],W-railX-200), railX+22, dotY[i]+6);
+    const w=wxData[i]; if(w){ const wt=wxWord(w.code)+' '+Math.round(w.t)+'\u00b0'; x.font='600 15px Inter, sans-serif'; x.fillStyle='#6b7178'; const tw=x.measureText(wt).width; x.fillText(wt, W-padX-tw, dotY[i]+5); }
+  }
+  for(let i=0;i<t.legs.length;i++){
+    const lg=t.legs[i]; let sy=segTop[i]+18;
+    x.font='700 13px Inter, sans-serif'; const badge=lg.useToll?'AUTOSTRADA':'SENZA PEDAGGIO';
+    x.fillStyle=lg.useToll?'#00693c':'#8a8f95'; x.fillText(badge, railX+22, sy);
+    let bx=railX+22+x.measureText(badge).width+12;
+    x.font='600 14px Inter, sans-serif'; x.fillStyle='#1b1f23';
+    x.fillText(fmt0(lg.km)+' km \u00b7 '+fmtDur(lg.min)+(lg.delay>0?' (+'+lg.delay+')':''), bx, sy);
+    sy+=24; x.fillStyle='#1b1f23'; const carbT='carburante '+fmt(lg.fuel)+' \u20ac'; x.fillText(carbT, railX+22, sy);
+    if(lg.toll>0){ x.fillStyle='#00693c'; x.font='700 14px Inter, sans-serif'; x.fillText('\u00b7 pedaggio '+fmt(lg.toll)+' \u20ac', railX+22+x.measureText(carbT).width+10, sy); }
+  }
+  let ty=headH + t.pts.length*rowStop + t.legs.length*rowSeg + 34;
+  x.strokeStyle='#dde1e5'; x.lineWidth=1; x.beginPath(); x.moveTo(padX,ty-16); x.lineTo(W-padX,ty-16); x.stroke();
+  x.fillStyle='#6b7178'; x.font='700 13px Archivo, Inter, sans-serif'; x.fillText('TOTALE ANDATA', padX, ty); ty+=32;
+  const bigTxt=fmt(t.totals.cost)+' \u20ac'; x.fillStyle='#00693c'; x.font='900 30px Archivo, Inter, sans-serif'; x.fillText(bigTxt, padX, ty);
+  x.fillStyle='#6b7178'; x.font='600 15px Inter, sans-serif'; x.fillText('   '+fmt0(t.totals.km)+' km \u00b7 '+fmtDur(t.totals.drive+breaksMin(t.totals.km)), padX+x.measureText(bigTxt).width+4, ty); ty+=28;
+  x.fillStyle='#1b1f23'; x.font='700 15px Inter, sans-serif'; x.fillText('Andata e ritorno: '+fmt(t.totals.arCost)+' \u20ac \u00b7 '+fmtDur(t.totals.arTime), padX, ty); ty+=26;
+  if(typeof t.cmp.costDiff==='number'){
+    x.fillStyle='#6b7178'; x.font='600 14px Inter, sans-serif'; let vt;
+    if(t.cmp.costDiff>0.5) vt='Evitando i pedaggi risparmi '+fmt(t.cmp.costDiff)+' \u20ac (A/R)'+(t.cmp.timeDiff>1?', +'+fmtDur(t.cmp.timeDiff):'');
+    else if(t.cmp.costDiff<-0.5) vt='Tenere i pedaggi conviene: +'+fmt(-t.cmp.costDiff)+' \u20ac senza (A/R)';
+    else vt='Con o senza pedaggi il costo A/R e simile';
+    x.fillText(fitText(x,vt,W-2*padX), padX, ty);
+  }
+  return cv;
+}
+function prepareShareImage(){ try{ const cv=renderTripCanvas(); if(!cv){shareFile=null;return;} cv.toBlob(b=>{ shareFile=b?new File([b],'viaggio.png',{type:'image/png'}):null; },'image/png'); }catch(e){ shareFile=null; } }
+async function shareTrip(ev){
+  if(ev) ev.preventDefault();
+  if(!shareText && !shareFile) return;
+  if(navigator.share && shareFile && navigator.canShare && navigator.canShare({files:[shareFile]})){
+    try{ await navigator.share({files:[shareFile], text:shareText}); return; }catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  if(navigator.share){ try{ await navigator.share({text:shareText}); return; }catch(e){ if(e && e.name==='AbortError') return; } }
+  window.location.href='https://wa.me/?text='+encodeURIComponent(shareText);
+}
+function openFull(){
+  if(!tripInfo) return;
+  $('full-title').innerHTML=esc(tripInfo.veh)+'<small>'+esc(tripInfo.pts.join(' \u2192 '))+'</small>';
+  $('full-tl').innerHTML=$('legs').innerHTML;
+  const tt=tripInfo.totals, cm=tripInfo.cmp;
+  let h='<div><b>Totale andata</b> &middot; <span class="big">'+fmt(tt.cost)+' \u20ac</span></div>';
+  h+='<div>'+fmt0(tt.km)+' km &middot; '+fmtDur(tt.drive+breaksMin(tt.km))+'</div>';
+  h+='<div>Andata e ritorno: <b>'+fmt(tt.arCost)+' \u20ac</b> &middot; '+fmtDur(tt.arTime)+'</div>';
+  if(typeof cm.costDiff==='number'){
+    let vt;
+    if(cm.costDiff>0.5) vt='Evitando i pedaggi risparmi <b>'+fmt(cm.costDiff)+' \u20ac</b> (A/R)'+(cm.timeDiff>1?', +'+fmtDur(cm.timeDiff)+' di tempo':'')+'.';
+    else if(cm.costDiff<-0.5) vt='Tenere i pedaggi conviene: senza spendi <b>'+fmt(-cm.costDiff)+' \u20ac</b> in pi\u00f9 (A/R).';
+    else vt='Con o senza pedaggi il costo A/R \u00e8 simile.';
+    h+='<div style="margin-top:6px;color:var(--tenue)">'+vt+'</div>';
+  }
+  $('full-tot').innerHTML=h;
+  $('full').style.display='block'; document.body.style.overflow='hidden';
+}
+function closeFull(){ $('full').style.display='none'; document.body.style.overflow=''; }
+
+
 ['cons','pausaOgni','pausaMin'].forEach(id=>$(id).addEventListener('input',()=>{if(legData)computeTotals();}));
 $('prezzo').addEventListener('input',()=>{priceTouched=true;if(legData)computeTotals();});
 $('add-stop').addEventListener('click',addStop);
 $('calc').addEventListener('click',calcola);
 $('refresh').addEventListener('click',()=>autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon));
-$('wa').addEventListener('click',async ev=>{
-  if(!shareText) return;
-  if(navigator.share){
-    ev.preventDefault();
-    try{ await navigator.share({text:shareText}); }
-    catch(e){ if(e && e.name!=='AbortError'){ window.location.href='https://wa.me/?text='+encodeURIComponent(shareText); } }
-  }
-});
+$('wa').addEventListener('click',shareTrip);
+$('tl-expand').addEventListener('click',openFull);
+$('legs').addEventListener('click',openFull);
+$('full-close').addEventListener('click',closeFull);
+$('full-share').addEventListener('click',shareTrip);
 
 /* ---- init ---- */
 initPhotos();
