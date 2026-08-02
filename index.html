@@ -258,13 +258,48 @@
     </div>
   </div>
 
+  <style>
+    .stop{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+    .stop-dot{width:26px;height:26px;flex:0 0 auto;border-radius:50%;background:var(--verde);color:#fff;font-family:var(--display);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+    .stop-in{flex:1}
+    .stop-rm{flex:0 0 auto;width:30px;height:30px;border-radius:8px;border:1.5px solid var(--grigio-2);background:#fafbfc;color:var(--tenue);font-size:18px;cursor:pointer;line-height:1}
+    .leg{display:flex;padding:1px 0 1px 8px;margin-left:12px;border-left:2px dashed var(--grigio-2)}
+    .leg-toggle{display:inline-flex;gap:4px;margin:2px 0 2px 4px}
+    .leg-toggle button{font-family:var(--body);font-weight:600;font-size:11.5px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--grigio-2);background:#fafbfc;color:var(--tenue);cursor:pointer}
+    .leg-toggle button.on{background:var(--verde);color:#fff;border-color:var(--verde)}
+    .add-stop{width:100%;font-family:var(--body);font-weight:600;font-size:13px;color:var(--verde);background:#eef6f0;border:1.5px dashed #bfe0cd;border-radius:10px;padding:10px;cursor:pointer;margin:8px 0 14px}
+    .add-stop:disabled{opacity:.5;cursor:default}
+    .leg-card{background:var(--bianco);border:1px solid var(--grigio-2);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+    .leg-top{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:6px}
+    .leg-name{font-family:var(--display);font-weight:700;font-size:14px}
+    .leg-badge{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:20px;flex:0 0 auto}
+    .leg-badge.t{background:#e7f3ec;color:var(--verde)}
+    .leg-badge.f{background:#eef1f4;color:var(--tenue)}
+    .leg-bd{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;font-variant-numeric:tabular-nums}
+    .grand{background:var(--verde);color:#fff;border-radius:16px;border:3px solid rgba(255,255,255,.9);padding:18px;box-shadow:0 16px 36px -22px rgba(0,60,30,.7);margin-top:4px}
+    .grand-h{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+    .grand-tot{font-family:var(--display);font-weight:900;font-size:clamp(34px,9vw,46px);line-height:1;margin:4px 0 2px;font-variant-numeric:tabular-nums}
+    .grand-tot small{font-size:.42em;margin-left:5px;font-weight:800}
+    .grand-time{font-family:var(--display);font-weight:700;font-size:14px;margin:2px 0 14px}
+    .grand-time small{font-family:var(--body);font-weight:500;opacity:.82;font-size:12px}
+    .grand .bd{background:rgba(255,255,255,.28)}
+    .grand .cell{background:var(--verde)}
+    .share{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+    .share a{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-family:var(--display);font-weight:700;font-size:14px;padding:14px 10px;border-radius:12px;text-align:center}
+    .share a svg{width:18px;height:18px;flex:0 0 auto}
+    .share a.disabled{opacity:.45;pointer-events:none}
+    .wa{background:#25d366;color:#fff}
+    .maplink{background:#fafbfc;border:2px solid var(--grigio-2);color:var(--asfalto)}
+    @media (max-width:470px){.share{grid-template-columns:1fr}}
+  </style>
+
   <div class="card">
     <h2>Percorso</h2>
-    <div class="field"><label for="da">Partenza</label><input type="text" id="da" placeholder="es. Massa" autocomplete="off"></div>
-    <div class="field"><label for="a">Destinazione</label><input type="text" id="a" placeholder="es. Firenze" autocomplete="off"></div>
+    <div id="stops"></div>
+    <button class="add-stop" id="add-stop">+ Aggiungi tappa (max 5)</button>
     <button class="btn" id="calc">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      Calcola distanza e costi
+      Calcola costi e tempi
     </button>
     <div class="msg" id="msg"></div>
 
@@ -272,20 +307,8 @@
       <summary>Parametri e impostazioni</summary>
       <div class="adv">
         <div class="row">
-          <div class="field"><label for="km">Distanza <span class="hint">(auto/manuale)</span></label><div class="with-suffix"><input type="number" id="km" min="0" step="1" placeholder="0"><span class="suffix">km</span></div></div>
           <div class="field"><label for="cons">Consumo</label><div class="with-suffix"><input type="number" id="cons" min="0" step="0.1"><span class="suffix">L/100</span></div></div>
-        </div>
-        <div class="row">
           <div class="field"><label for="prezzo">Prezzo carburante</label><div class="with-suffix"><input type="number" id="prezzo" min="0" step="0.01"><span class="suffix">&euro;/L</span></div></div>
-          <div class="field"><label for="tariffa">Tariffa pedaggio</label><div class="with-suffix"><input type="number" id="tariffa" min="0" step="0.005" value="0.075"><span class="suffix">&euro;/km</span></div></div>
-        </div>
-        <div class="row">
-          <div class="field"><label for="quota">Quota autostrada</label><div class="with-suffix"><input type="number" id="quota" min="0" max="100" step="5" value="85"><span class="suffix">%</span></div></div>
-          <div class="field"><label for="extra">Extra senza pedaggi</label><div class="with-suffix"><input type="number" id="extra" min="0" step="1" value="18"><span class="suffix">%</span></div></div>
-        </div>
-        <div class="row">
-          <div class="field"><label for="velAuto">Vel. media autostrada</label><div class="with-suffix"><input type="number" id="velAuto" min="20" step="5" value="105"><span class="suffix">km/h</span></div></div>
-          <div class="field"><label for="velFree">Vel. media senza pedaggi</label><div class="with-suffix"><input type="number" id="velFree" min="20" step="5" value="68"><span class="suffix">km/h</span></div></div>
         </div>
         <div class="row">
           <div class="field"><label for="pausaOgni">Sosta ogni</label><div class="with-suffix"><input type="number" id="pausaOgni" min="10" step="10" value="200"><span class="suffix">km</span></div></div>
@@ -296,58 +319,38 @@
   </div>
 
   <div class="results" id="results" style="display:none">
-    <div class="route toll">
-      <div class="top"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12"/><path d="M12 5v14"/></svg></span><span class="rname">Percorso con pedaggi</span><span class="badge stima" id="toll-badge"></span></div>
-      <div class="totale"><span id="t-tot">0,00</span><small>&euro;</small></div>
-      <div class="time-txt" id="t-time"></div>
-      <div class="path-txt" id="t-path"></div>
+    <div id="legs"></div>
+    <div class="grand">
+      <div class="grand-h">Totale andata</div>
+      <div class="grand-tot"><span id="g-tot">0,00</span><small>&euro;</small></div>
+      <div class="grand-time" id="g-time"></div>
       <div class="bd">
-        <div class="cell"><div class="k">Distanza</div><div class="v"><span id="t-km">0</span> km</div></div>
-        <div class="cell"><div class="k">Carburante</div><div class="v"><span id="t-carb">0,00</span> &euro;</div></div>
-        <div class="cell"><div class="k">Pedaggio</div><div class="v"><span id="t-ped">0,00</span> &euro;</div></div>
-      </div>
-    </div>
-    <div class="route free">
-      <div class="top"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span><span class="rname">Pedaggi al minimo</span></div>
-      <div class="totale"><span id="f-tot">0,00</span><small>&euro;</small></div>
-      <div class="time-txt" id="f-time"></div>
-      <div class="path-txt" id="f-path">Percorso pi&ugrave; lungo, senza autostrada a pagamento</div>
-      <div class="bd">
-        <div class="cell"><div class="k">Distanza</div><div class="v"><span id="f-km">0</span> km</div></div>
-        <div class="cell"><div class="k">Carburante</div><div class="v"><span id="f-carb">0,00</span> &euro;</div></div>
-        <div class="cell"><div class="k">Pedaggio</div><div class="v"><span id="f-ped">0,00</span> &euro;</div></div>
+        <div class="cell"><div class="k">Distanza</div><div class="v"><span id="g-km">0</span> km</div></div>
+        <div class="cell"><div class="k">Carburante</div><div class="v"><span id="g-carb">0,00</span> &euro;</div></div>
+        <div class="cell"><div class="k">Pedaggi</div><div class="v"><span id="g-ped">0,00</span> &euro;</div></div>
       </div>
     </div>
     <div class="ar">
       <div class="ar-h">Andata e ritorno (A/R)</div>
       <div class="ar-grid">
-        <div class="ar-cell"><div class="ar-k">Con pedaggi</div><div class="ar-v"><span id="ar-toll">0,00</span> &euro;</div></div>
-        <div class="ar-cell"><div class="ar-k">Senza pedaggi</div><div class="ar-v"><span id="ar-free">0,00</span> &euro;</div></div>
+        <div class="ar-cell"><div class="ar-k">Costo A/R</div><div class="ar-v"><span id="ar-tot">0,00</span> &euro;</div></div>
+        <div class="ar-cell"><div class="ar-k">Tempo A/R</div><div class="ar-v" id="ar-time">&mdash;</div></div>
       </div>
-      <div class="ar-diff same" id="ar-diff-box"><span id="ar-diff-label">Differenza</span> <b><span id="ar-diff">0,00</span> &euro;</b></div>
     </div>
-    <div class="verdict" id="verdict">
-      <div class="verdict-head good" id="verdict-head">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 6a3 3 0 0 0 6 0L6 7Zm12 0l-3 6a3 3 0 0 0 6 0l-3-6Z"/></svg>
-        <span id="verdict-head-txt">&mdash;</span>
-      </div>
-      <p class="verdict-line" id="verdict-cost"></p>
-      <p class="verdict-line" id="verdict-time"></p>
-    </div>
-    <div class="maps">
-      <a id="map-toll" class="disabled" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-        Maps &middot; con pedaggi
+    <div class="share">
+      <a id="wa" class="wa disabled" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20Z"/><path d="M9.5 7.2c-.2-.4-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3c-.3.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.7 2.8 4.3 3.8 2.1.8 2.6.7 3 .6.6-.1 1.2-.5 1.4-1 .2-.5.2-.9.1-1l-.6-.3-1.5-.7c-.2-.1-.4-.1-.5.1l-.6.8c-.1.2-.3.2-.5.1-.7-.3-1.4-.6-2.1-1.5-.5-.6-.9-1.3-1-1.5-.1-.2 0-.3.1-.4l.3-.4.2-.3v-.4l-.7-1.6Z"/></svg>
+        Condividi su WhatsApp
       </a>
-      <a id="map-free" class="disabled" target="_blank" rel="noopener">
+      <a id="map-all" class="maplink disabled" target="_blank" rel="noopener">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-        Maps &middot; evita pedaggi
+        Apri in Google Maps
       </a>
     </div>
   </div>
 
   <p class="note">
-    <b>Prezzi carburante.</b> All'apertura l'app prova a scaricare i prezzi medi dei distributori (benzina e GPL) e, dopo il calcolo del percorso, li aggiorna sulla zona di partenza. Se il browser blocca la connessione usa valori di riferimento aggiornabili a mano. <b>Pedaggio:</b> se la funzione dei pedaggi (HERE) &egrave; attiva mostra l'importo <b>esatto</b> con badge &laquo;esatto&raquo;; altrimenti resta una stima Classe A con badge &laquo;stima&raquo;. La distanza <b>senza pedaggi</b> &egrave; il percorso reale che evita i caselli (via HERE); se non disponibile, ripiega su una stima con la % extra impostata. <b>Andata/ritorno:</b> i totali A/R sono il doppio del solo andata; la differenza indica se evitare i pedaggi conviene o no (il percorso senza pedaggi &egrave; pi&ugrave; lungo, quindi non sempre &egrave; pi&ugrave; economico). <b>Tempo:</b> per il percorso con pedaggi usa la durata reale del routing, per gli altri casi le velocit&agrave; medie impostate; a entrambi aggiunge una sosta di 15 min ogni 200 km (valori modificabili). I <b>link Maps</b> si aprono nell'app su iPhone.
+    <b>Come funziona.</b> Aggiungi fino a 5 tappe tra partenza e destinazione; per ogni tratta scegli <b>Pedaggio</b> o <b>Senza</b>. L'app calcola con HERE la distanza, il tempo e il pedaggio reale di ogni tratta e somma tutto. <b>Andata/ritorno</b> raddoppia costo e tempo. <b>Tempo:</b> durate reali del percorso pi&ugrave; una sosta di 15 min ogni 200 km (modificabile). Il pulsante <b>WhatsApp</b> invia il riepilogo con tutte le tratte, i costi, i tempi e il link Maps con le tappe.
   </p>
 </div>
 
@@ -356,222 +359,168 @@ const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmt0=n=>n.toLocaleString('it-IT',{maximumFractionDigits:0});
 const fmt3=n=>n.toLocaleString('it-IT',{minimumFractionDigits:3,maximumFractionDigits:3});
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const vehicles={captur:{fuel:'gpl',consumo:7.8,tariffa:0.075},ducati:{fuel:'benzina',consumo:5.5,tariffa:0.075}};
+const vehicles={captur:{fuel:'gpl',consumo:7.8,label:'Renault Captur (GPL)'},ducati:{fuel:'benzina',consumo:5.5,label:'Ducati Scrambler (Benzina)'}};
 const FALLBACK={benzina:1.98,gpl:0.76};
 let sel='captur';
-let live={benzina:FALLBACK.benzina,gpl:FALLBACK.gpl,src:'rif'};
+let live={benzina:FALLBACK.benzina,gpl:FALLBACK.gpl};
 let priceTouched=false;
 const DEFAULT_COORD={lat:43.77,lon:11.20};
+const TOLL_API='/.netlify/functions/pedaggio';
 
 /* ---- foto veicoli ---- */
-function initPhotos(){
-  ['captur','ducati'].forEach(v=>{
-    let data=null; try{data=localStorage.getItem('foto_'+v);}catch(e){}
-    if(data) setPhoto(v,data);
-  });
-}
-function setPhoto(v,data){
-  const card=document.querySelector('.veh[data-v="'+v+'"]');
-  card.querySelector('.foto[data-fimg="'+v+'"]').src=data;
-  card.querySelector('.foto[data-fimg="'+v+'"]').style.display='block';
-  card.querySelector('svg.icon').style.display='none';
-  card.querySelector('.foto-btn').style.display='none';
-  card.querySelector('.foto-rm').style.display='flex';
-}
-function clearPhoto(v){
-  const card=document.querySelector('.veh[data-v="'+v+'"]');
-  card.querySelector('.foto[data-fimg="'+v+'"]').style.display='none';
-  card.querySelector('svg.icon').style.display='block';
-  card.querySelector('.foto-btn').style.display='flex';
-  card.querySelector('.foto-rm').style.display='none';
-  try{localStorage.removeItem('foto_'+v);}catch(e){}
-}
-function pickPhoto(v){
-  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
-  inp.onchange=()=>{const f=inp.files[0]; if(!f)return; const rd=new FileReader();
-    rd.onload=()=>{setPhoto(v,rd.result); try{localStorage.setItem('foto_'+v,rd.result);}catch(e){}};
-    rd.readAsDataURL(f);};
-  inp.click();
-}
+function initPhotos(){['captur','ducati'].forEach(v=>{let d=null;try{d=localStorage.getItem('foto_'+v);}catch(e){}if(d)setPhoto(v,d);});}
+function setPhoto(v,data){const c=document.querySelector('.veh[data-v="'+v+'"]');c.querySelector('.foto[data-fimg="'+v+'"]').src=data;c.querySelector('.foto[data-fimg="'+v+'"]').style.display='block';c.querySelector('svg.icon').style.display='none';c.querySelector('.foto-btn').style.display='none';c.querySelector('.foto-rm').style.display='flex';}
+function clearPhoto(v){const c=document.querySelector('.veh[data-v="'+v+'"]');c.querySelector('.foto[data-fimg="'+v+'"]').style.display='none';c.querySelector('svg.icon').style.display='block';c.querySelector('.foto-btn').style.display='flex';c.querySelector('.foto-rm').style.display='none';try{localStorage.removeItem('foto_'+v);}catch(e){}}
+function pickPhoto(v){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{setPhoto(v,rd.result);try{localStorage.setItem('foto_'+v,rd.result);}catch(e){}};rd.readAsDataURL(f);};inp.click();}
 document.querySelectorAll('.foto-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();pickPhoto(b.dataset.fv);}));
 document.querySelectorAll('.foto-rm').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();clearPhoto(b.dataset.rm);}));
 
 /* ---- veicoli ---- */
-document.querySelectorAll('.veh').forEach(el=>el.addEventListener('click',()=>{
-  document.querySelectorAll('.veh').forEach(x=>x.classList.remove('sel'));
-  el.classList.add('sel'); sel=el.dataset.v; loadVehicle();
-}));
-function loadVehicle(){
-  $('cons').value=vehicles[sel].consumo;
-  $('tariffa').value=vehicles[sel].tariffa;
-  priceTouched=false; applyPrice(); compute();
-}
-function applyPrice(){
-  $('p-benz').textContent=fmt3(live.benzina);
-  $('p-gpl').textContent=fmt3(live.gpl);
-  if(!priceTouched){ $('prezzo').value=live[vehicles[sel].fuel]; }
-}
+document.querySelectorAll('.veh').forEach(el=>el.addEventListener('click',()=>{document.querySelectorAll('.veh').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.v;loadVehicle();}));
+function loadVehicle(){$('cons').value=vehicles[sel].consumo;priceTouched=false;applyPrice();if(legData)computeTotals();}
+function applyPrice(){$('p-benz').textContent=fmt3(live.benzina);$('p-gpl').textContent=fmt3(live.gpl);if(!priceTouched)$('prezzo').value=live[vehicles[sel].fuel];}
 
 /* ---- prezzi live ---- */
 function setStatus(t,cls){const e=$('fuelts');e.textContent=t;e.className='fuelts'+(cls?' '+cls:'');}
 function cachePrices(){try{localStorage.setItem('fuel',JSON.stringify({b:live.benzina,g:live.gpl,ts:Date.now()}));}catch(e){}}
 function loadCache(){try{const c=JSON.parse(localStorage.getItem('fuel'));if(c){live.benzina=c.b;live.gpl=c.g;}}catch(e){}}
-async function fetchFuelAvg(fuel,lat,lon){
-  const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),7000);
-  try{
-    const url='https://prezzi-carburante.onrender.com/api/distributori?latitude='+lat+'&longitude='+lon+'&distance=25&fuel='+fuel+'&results=8';
-    const r=await fetch(url,{signal:ctrl.signal});
-    const arr=await r.json();
-    clearTimeout(to);
-    if(!Array.isArray(arr)||!arr.length) return null;
-    const ps=arr.map(x=>x.prezzo).filter(p=>p>0);
-    if(!ps.length) return null;
-    return Math.round(ps.reduce((a,b)=>a+b,0)/ps.length*1000)/1000;
-  }catch(e){clearTimeout(to);return null;}
-}
-async function autoUpdate(lat,lon){
-  setStatus('Aggiornamento prezzi\u2026','loading');
-  const [b,g]=await Promise.all([fetchFuelAvg('benzina',lat,lon),fetchFuelAvg('gpl',lat,lon)]);
-  let ok=false;
-  if(b){live.benzina=b;ok=true;} if(g){live.gpl=g;ok=true;}
-  applyPrice();
-  if(ok){live.src='live';cachePrices();
-    setStatus('Aggiornati \u00b7 media distributori vicini \u00b7 '+new Date().toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),'');
-  }else{
-    setStatus('Connessione non disponibile: prezzi di riferimento (modificabili a mano).','');
-  }
-}
+async function fetchFuelAvg(fuel,lat,lon){const ctrl=new AbortController();const to=setTimeout(()=>ctrl.abort(),7000);try{const url='https://prezzi-carburante.onrender.com/api/distributori?latitude='+lat+'&longitude='+lon+'&distance=25&fuel='+fuel+'&results=8';const r=await fetch(url,{signal:ctrl.signal});const arr=await r.json();clearTimeout(to);if(!Array.isArray(arr)||!arr.length)return null;const ps=arr.map(x=>x.prezzo).filter(p=>p>0);if(!ps.length)return null;return Math.round(ps.reduce((a,b)=>a+b,0)/ps.length*1000)/1000;}catch(e){clearTimeout(to);return null;}}
+async function autoUpdate(lat,lon){setStatus('Aggiornamento prezzi\u2026','loading');const [b,g]=await Promise.all([fetchFuelAvg('benzina',lat,lon),fetchFuelAvg('gpl',lat,lon)]);let ok=false;if(b){live.benzina=b;ok=true;}if(g){live.gpl=g;ok=true;}applyPrice();if(legData)computeTotals();if(ok){cachePrices();setStatus('Aggiornati \u00b7 media distributori vicini \u00b7 '+new Date().toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}),'');}else{setStatus('Connessione non disponibile: prezzi di riferimento (modificabili a mano).','');}}
 
-/* ---- maps ---- */
-function mapsUrl(o,d,avoid){let u='https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(o)+'&destination='+encodeURIComponent(d)+'&travelmode=driving';if(avoid)u+='&avoid=tolls';return u;}
-function refreshMaps(){const o=$('da').value.trim(),d=$('a').value.trim(),t=$('map-toll'),f=$('map-free');
-  if(o&&d){t.href=mapsUrl(o,d,false);t.classList.remove('disabled');f.href=mapsUrl(o,d,true);f.classList.remove('disabled');}
-  else{t.classList.add('disabled');f.classList.add('disabled');}}
+/* ---- tappe ---- */
+let stops=['',''];
+let legToll=[true];
+let legData=null;
 
-/* ---- pedaggio esatto (Netlify Function -> TollGuru) ---- */
-const TOLL_API='/.netlify/functions/pedaggio';
-let exactToll=null, tollLoading=false;
-function routeKey(){return ($('da').value.trim()+'|'+$('a').value.trim()).toLowerCase();}
-function setBadge(txt,cls){const b=$('toll-badge');if(!b)return;b.textContent=txt;b.className='badge '+(cls||'');}
-async function fetchExactToll(){
-  const from=$('da').value.trim(),to=$('a').value.trim(); if(!from||!to)return;
-  const key=routeKey(); tollLoading=true; setBadge('calcolo\u2026','stima');
-  try{
-    const r=await fetch(TOLL_API+'?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to)+'&vehicle=2AxlesAuto');
-    const d=await r.json();
-    if(d && d.configured!==false && typeof d.toll==='number'){
-      exactToll={ value:d.toll, cur:d.currency||'EUR', key,
-        freeKm:(d.free&&d.free.distanceKm)||null,
-        freeMin:(d.free&&d.free.durationMin)||null,
-        freeToll:(d.free&&typeof d.free.toll==='number')?d.free.toll:0 };
+function renderStops(){
+  const c=$('stops'); c.innerHTML=''; const n=stops.length;
+  for(let i=0;i<n;i++){
+    const row=document.createElement('div'); row.className='stop';
+    const dot=document.createElement('span'); dot.className='stop-dot'; dot.textContent=i===0?'A':(i===n-1?'B':String(i));
+    const inp=document.createElement('input'); inp.type='text'; inp.className='stop-in'; inp.dataset.i=i;
+    inp.placeholder=i===0?'Partenza':(i===n-1?'Destinazione':'Tappa '+i); inp.value=stops[i]||'';
+    inp.addEventListener('input',()=>{stops[i]=inp.value;legData=null;$('results').style.display='none';});
+    row.appendChild(dot); row.appendChild(inp);
+    if(i!==0&&i!==n-1){const rm=document.createElement('button');rm.className='stop-rm';rm.innerHTML='&times;';rm.title='Rimuovi tappa';rm.addEventListener('click',()=>removeStop(i));row.appendChild(rm);}
+    c.appendChild(row);
+    if(i<n-1){
+      const leg=document.createElement('div'); leg.className='leg';
+      const tg=document.createElement('div'); tg.className='leg-toggle';
+      const b1=document.createElement('button'); b1.textContent='Pedaggio'; if(legToll[i]!==false)b1.classList.add('on');
+      const b0=document.createElement('button'); b0.textContent='Senza'; if(legToll[i]===false)b0.classList.add('on');
+      b1.addEventListener('click',()=>setLeg(i,true)); b0.addEventListener('click',()=>setLeg(i,false));
+      tg.appendChild(b1); tg.appendChild(b0); leg.appendChild(tg); c.appendChild(leg);
     }
-    else { exactToll=null; }
-  }catch(e){ exactToll=null; }
-  tollLoading=false; compute();
+  }
+  $('add-stop').disabled=(stops.length-2)>=5;
+}
+function setLeg(i,val){legToll[i]=val;renderStops();if(legData)computeTotals();}
+function addStop(){if((stops.length-2)>=5)return;stops.splice(stops.length-1,0,'');legToll.push(true);legData=null;$('results').style.display='none';renderStops();}
+function removeStop(i){stops.splice(i,1);legToll.splice(i,1);legData=null;$('results').style.display='none';renderStops();}
+function readStops(){document.querySelectorAll('.stop-in').forEach(inp=>{stops[+inp.dataset.i]=inp.value;});}
+
+/* ---- tempo / soste ---- */
+function fmtDur(mins){mins=Math.round(mins);const h=Math.floor(mins/60),m=mins%60;if(h&&m)return h+' h '+m+' min';if(h)return h+' h';return m+' min';}
+function breaksMin(km){const ogni=parseFloat($('pausaOgni').value)||200,dur=parseFloat($('pausaMin').value)||0,n=km>0?Math.max(0,Math.ceil(km/ogni)-1):0;return n*dur;}
+function timeLine(km,drivingMin){const ogni=parseFloat($('pausaOgni').value)||200,dur=parseFloat($('pausaMin').value)||0;const nB=km>0?Math.max(0,Math.ceil(km/ogni)-1):0;const bMin=nB*dur,tot=drivingMin+bMin;let ex='';if(nB>0)ex=' <small>guida '+fmtDur(drivingMin)+' + '+nB+' sosta'+(nB>1?'e':'')+' ('+bMin+' min)</small>';return 'Tempo '+fmtDur(tot)+ex;}
+
+/* ---- calcolo tratte ---- */
+async function fetchLeg(a,b){
+  const r=await fetch(TOLL_API+'?from='+encodeURIComponent(a)+'&to='+encodeURIComponent(b));
+  const d=await r.json();
+  if(d.configured===false) throw {type:'noconf'};
+  if(!d.found) throw {type:'notfound',err:d.error};
+  const toll={km:d.distanceKm||0,min:d.durationMin||0,toll:d.toll||0,cur:d.currency||'EUR'};
+  const free=d.free?{km:d.free.distanceKm||toll.km,min:d.free.durationMin||toll.min,toll:d.free.toll||0}:{km:toll.km,min:toll.min,toll:toll.toll};
+  return {toll,free};
+}
+async function calcola(){
+  readStops();
+  const pts=stops.map(s=>s.trim());
+  if(pts.length<2||pts.some(s=>!s)){showMsg('Compila partenza, destinazione e tutte le tappe.','err');return;}
+  const btn=$('calc'); btn.disabled=true; showMsg('Calcolo delle tratte in corso\u2026','ok');
+  try{
+    const jobs=[]; for(let i=0;i<pts.length-1;i++) jobs.push(fetchLeg(pts[i],pts[i+1]));
+    legData=await Promise.all(jobs);
+    const nL=pts.length-1;
+    showMsg('Calcolate '+nL+' tratt'+(nL>1?'e':'a')+'.','ok');
+    computeTotals();
+    $('results').style.display='grid';
+  }catch(e){
+    legData=null;
+    if(e&&e.type==='noconf') showMsg('La funzione dei pedaggi non risponde (HERE_API_KEY su Netlify).','err');
+    else showMsg('Non riesco a calcolare una tratta ('+((e&&e.err)||'controlla i nomi dei luoghi')+').','err');
+  }finally{ btn.disabled=false; }
 }
 
-/* ---- calcolo ---- */
-let osrmDurationMin=null;
-function fmtDur(mins){mins=Math.round(mins);const h=Math.floor(mins/60),m=mins%60;if(h&&m)return h+' h '+m+' min';if(h)return h+' h';return m+' min';}
-function timeLine(km,drivingMin){
-  const ogni=parseFloat($('pausaOgni').value)||200, dur=parseFloat($('pausaMin').value)||0;
-  const nBreaks=km>0?Math.max(0,Math.ceil(km/ogni)-1):0;
-  const breakMin=nBreaks*dur, tot=drivingMin+breakMin;
-  let ex='';
-  if(nBreaks>0) ex=' <small>guida '+fmtDur(drivingMin)+' + '+nBreaks+' sosta'+(nBreaks>1?'e':'')+' ('+breakMin+' min)</small>';
-  return 'Tempo '+fmtDur(tot)+ex;
+function legCard(a,b,useToll,km,min,toll,fuel){
+  return '<div class="leg-card"><div class="leg-top"><span class="leg-name">'+esc(a)+' \u2192 '+esc(b)+'</span>'
+    +'<span class="leg-badge '+(useToll?'t':'f')+'">'+(useToll?'con pedaggio':'senza pedaggio')+'</span></div>'
+    +'<div class="leg-bd"><span>'+fmt0(km)+' km</span><span>'+fmtDur(min)+'</span><span>pedaggio '+fmt(toll)+' \u20ac</span><span>carb. '+fmt(fuel)+' \u20ac</span></div></div>';
 }
-function compute(){
-  const km=parseFloat($('km').value)||0,cons=parseFloat($('cons').value)||0,prezzo=parseFloat($('prezzo').value)||0;
-  const tar=parseFloat($('tariffa').value)||0,quota=(parseFloat($('quota').value)||0)/100,extra=(parseFloat($('extra').value)||0)/100;
-  const velA=parseFloat($('velAuto').value)||105, velF=parseFloat($('velFree').value)||68;
-  const carbT=km/100*cons*prezzo;
-  let pedT, tollEx=false;
-  if(exactToll && exactToll.key===routeKey()){ pedT=exactToll.value; tollEx=true; }
-  else { pedT=km*quota*tar; }
-  if(!tollLoading) setBadge(km>0?(tollEx?'esatto':'stima'):'', tollEx?'esatto':'stima');
-  $('t-km').textContent=fmt0(km);$('t-carb').textContent=fmt(carbT);$('t-ped').textContent=fmt(pedT);$('t-tot').textContent=fmt(carbT+pedT);
-  const haveFree = !!(exactToll && exactToll.key===routeKey() && exactToll.freeKm);
-  const kmF = haveFree ? exactToll.freeKm : km*(1+extra);
-  const pedF = haveFree ? (exactToll.freeToll||0) : 0;
-  const carbF = kmF/100*cons*prezzo;
-  const totF = carbF + pedF;
-  $('f-km').textContent=fmt0(kmF);$('f-carb').textContent=fmt(carbF);$('f-ped').textContent=fmt(pedF);$('f-tot').textContent=fmt(totF);
-  $('f-path').textContent = haveFree ? 'Percorso reale che evita l\u2019autostrada a pagamento' : 'Percorso pi\u00f9 lungo, stimato';
-  const totT=carbT+pedT, arT=totT*2, arF=totF*2, diff=arT-arF;
-  $('ar-toll').textContent=fmt(arT);$('ar-free').textContent=fmt(arF);$('ar-diff').textContent=fmt(Math.abs(diff));
-  const box=$('ar-diff-box'), lab=$('ar-diff-label');
-  if(diff>0.005){ box.className='ar-diff save'; lab.textContent='Evitando i pedaggi risparmi'; }
-  else if(diff<-0.005){ box.className='ar-diff cost'; lab.textContent='Evitare i pedaggi costa in pi\u00f9'; }
-  else { box.className='ar-diff same'; lab.textContent='Stesso costo A/R'; }
-  if(km>0){
-    const driveT=osrmDurationMin!=null?osrmDurationMin:km/velA*60;
-    const driveF=(exactToll && exactToll.key===routeKey() && exactToll.freeMin!=null)?exactToll.freeMin:kmF/velF*60;
-    $('t-time').innerHTML=timeLine(km,driveT);
-    $('f-time').innerHTML=timeLine(kmF,driveF);
-    const brk=(x)=>{const ogni=parseFloat($('pausaOgni').value)||200,dur=parseFloat($('pausaMin').value)||0,n=x>0?Math.max(0,Math.ceil(x/ogni)-1):0;return n*dur;};
-    const tollTot=driveT+brk(km), freeTot=driveF+brk(kmF);
-    const tDiff=freeTot-tollTot, cDiff=arT-arF;
-    let head,cls,cL,tL;
-    if(cDiff>0.5) cL='<b>Costo:</b> evitando i pedaggi risparmi <b>'+fmt(cDiff)+'\u00a0&euro;</b> in A/R.';
-    else if(cDiff<-0.5) cL='<b>Costo:</b> evitare i pedaggi costa <b>'+fmt(-cDiff)+'\u00a0&euro;</b> in pi\u00f9 in A/R: il giro pi\u00f9 lungo consuma pi\u00f9 carburante di quanto risparmi al casello.';
-    else cL='<b>Costo:</b> in A/R i due percorsi si equivalgono (differenza '+fmt(Math.abs(cDiff))+'\u00a0&euro;).';
-    if(tDiff>1) tL='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(tDiff)+'</b> in pi\u00f9 a tratta ('+fmtDur(tDiff*2)+' in A/R): l\'autostrada \u00e8 pi\u00f9 veloce.';
-    else if(tDiff<-1) tL='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(-tDiff)+'</b> in meno a tratta.';
-    else tL='<b>Tempo:</b> i due percorsi hanno tempi equivalenti.';
-    if(cDiff<=0.5 && tDiff>=-1){ head='Conviene l\'autostrada'; cls='good'; }
-    else if(cDiff>0.5 && tDiff<=1){ head='Conviene evitare i pedaggi'; cls='good'; }
-    else if(cDiff>0.5 && tDiff>1){ head='Dipende: risparmio contro tempo'; cls='mixed'; }
-    else { head='Valuta i due percorsi'; cls='mixed'; }
-    $('verdict-head-txt').textContent=head;
-    $('verdict-head').className='verdict-head '+cls;
-    $('verdict-cost').innerHTML=cL;
-    $('verdict-time').innerHTML=tL;
-    $('results').style.display='grid';
-  }
-  refreshMaps();
+function computeTotals(){
+  if(!legData)return;
+  const cons=parseFloat($('cons').value)||0, prezzo=parseFloat($('prezzo').value)||0;
+  const pts=stops.map(s=>s.trim());
+  let totKm=0,totToll=0,totFuel=0,totDrive=0; const html=[];
+  legData.forEach((ld,i)=>{
+    const useToll=legToll[i]!==false; const v=useToll?ld.toll:ld.free;
+    const fuel=v.km/100*cons*prezzo;
+    totKm+=v.km; totToll+=v.toll; totFuel+=fuel; totDrive+=v.min;
+    html.push(legCard(pts[i],pts[i+1],useToll,v.km,v.min,v.toll,fuel));
+  });
+  $('legs').innerHTML=html.join('');
+  const totCost=totFuel+totToll;
+  $('g-km').textContent=fmt0(totKm);$('g-carb').textContent=fmt(totFuel);$('g-ped').textContent=fmt(totToll);$('g-tot').textContent=fmt(totCost);
+  $('g-time').innerHTML=timeLine(totKm,totDrive);
+  const arCost=totCost*2, arKm=totKm*2, arDrive=totDrive*2;
+  $('ar-tot').textContent=fmt(arCost);
+  $('ar-time').textContent=fmtDur(arDrive+breaksMin(arKm));
+  buildShare(pts,{totKm,totToll,totFuel,totDrive,totCost,arCost});
 }
-['cons','tariffa','quota','extra','velAuto','velFree','pausaOgni','pausaMin'].forEach(id=>$(id).addEventListener('input',compute));
-$('km').addEventListener('input',()=>{osrmDurationMin=null;compute();});
-$('prezzo').addEventListener('input',()=>{priceTouched=true;compute();});
-['da','a'].forEach(id=>$(id).addEventListener('input',()=>{exactToll=null;refreshMaps();}));
-$('refresh').addEventListener('click',()=>autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon));
+
+/* ---- condivisione ---- */
+function buildMaps(pts){
+  const o=encodeURIComponent(pts[0]),dd=encodeURIComponent(pts[pts.length-1]);
+  const mid=pts.slice(1,-1).map(encodeURIComponent).join('%7C');
+  let u='https://www.google.com/maps/dir/?api=1&origin='+o+'&destination='+dd+'&travelmode=driving';
+  if(mid)u+='&waypoints='+mid;
+  return u;
+}
+function buildShare(pts,t){
+  const map=buildMaps(pts);
+  $('map-all').href=map; $('map-all').classList.remove('disabled');
+  const cons=parseFloat($('cons').value)||0, prezzo=parseFloat($('prezzo').value)||0;
+  const L=[];
+  L.push('Costo Viaggio - '+vehicles[sel].label);
+  L.push(pts.join(' \u2192 '));
+  L.push('');
+  L.push('Tratte:');
+  legData.forEach((ld,i)=>{const useToll=legToll[i]!==false;const v=useToll?ld.toll:ld.free;const fuel=v.km/100*cons*prezzo;
+    L.push((i+1)+'. '+pts[i]+' \u2192 '+pts[i+1]+' ('+(useToll?'con pedaggio':'senza pedaggio')+'): '+fmt0(v.km)+' km, '+fmtDur(v.min)+', pedaggio '+fmt(v.toll)+' EUR, carburante '+fmt(fuel)+' EUR');});
+  L.push('');
+  L.push('Totale andata: '+fmt0(t.totKm)+' km, '+fmtDur(t.totDrive+breaksMin(t.totKm))+', costo '+fmt(t.totCost)+' EUR');
+  L.push('Andata e ritorno: '+fmt(t.arCost)+' EUR');
+  L.push('');
+  L.push('Mappa: '+map);
+  $('wa').href='https://wa.me/?text='+encodeURIComponent(L.join('\n'));
+  $('wa').classList.remove('disabled');
+}
 
 function showMsg(t,type){const m=$('msg');m.textContent=t;m.className='msg show '+type;}
-async function geocode(q){
-  const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=it&q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});
-  const d=await r.json(); if(!d.length)throw new Error('"'+q+'" non trovato');
-  return {lat:+d[0].lat,lon:+d[0].lon,name:d[0].display_name.split(',')[0]};
-}
-async function routeKm(a,b){
-  const r=await fetch('https://router.project-osrm.org/route/v1/driving/'+a.lon+','+a.lat+';'+b.lon+','+b.lat+'?overview=false');
-  const d=await r.json(); if(d.code!=='Ok'||!d.routes.length)throw new Error('percorso non calcolabile');
-  return {km:d.routes[0].distance/1000, durMin:d.routes[0].duration/60};
-}
-$('calc').addEventListener('click',async()=>{
-  const da=$('da').value.trim(),a=$('a').value.trim();
-  if(!da||!a){showMsg('Inserisci partenza e destinazione.','err');return;}
-  const btn=$('calc');btn.disabled=true;showMsg('Calcolo del percorso in corso\u2026','ok');$('adv-wrap').open=true;
-  try{
-    const [p1,p2]=await Promise.all([geocode(da),geocode(a)]);
-    const rt=await routeKm(p1,p2);
-    osrmDurationMin=rt.durMin;
-    $('km').value=Math.round(rt.km);
-    $('t-path').textContent=p1.name+'  \u2192  '+p2.name;
-    showMsg('Percorso trovato: circa '+Math.round(rt.km)+' km. Aggiorno i prezzi sulla zona di partenza\u2026','ok');
-    compute();
-    fetchExactToll();
-    autoUpdate(p1.lat,p1.lon);
-  }catch(e){
-    showMsg('Calcolo automatico non disponibile ('+e.message+'). Inserisci i km a mano: costi e link Maps funzionano lo stesso.','err');
-    $('results').style.display='grid'; refreshMaps();
-  }finally{btn.disabled=false;}
-});
+
+['cons','pausaOgni','pausaMin'].forEach(id=>$(id).addEventListener('input',()=>{if(legData)computeTotals();}));
+$('prezzo').addEventListener('input',()=>{priceTouched=true;if(legData)computeTotals();});
+$('add-stop').addEventListener('click',addStop);
+$('calc').addEventListener('click',calcola);
+$('refresh').addEventListener('click',()=>autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon));
 
 /* ---- init ---- */
 initPhotos();
 loadCache();
+renderStops();
 loadVehicle();
 autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon);
 </script>
