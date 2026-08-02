@@ -322,6 +322,14 @@
     .full-tot{margin-top:14px;border-top:1px solid var(--grigio-2);padding-top:14px;font-size:14px;line-height:1.7;color:var(--asfalto)}
     .full-tot b{font-family:var(--display)}
     .full-tot .big{font-family:var(--display);font-weight:900;font-size:22px;color:var(--verde)}
+    .b-big{font-family:var(--display);font-weight:900;font-size:30px;color:var(--verde);margin:6px 0 2px;font-variant-numeric:tabular-nums}
+    .b-big small{font-size:.5em;font-weight:700;color:var(--tenue)}
+    .b-left{font-size:14px;font-weight:600;margin-bottom:8px}
+    .b-left.ok{color:var(--verde)} .b-left.no{color:#c8102e}
+    .b-legrow{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-top:1px solid var(--grigio-2)}
+    .b-legrow .bt{color:var(--verde);font-weight:600} .b-legrow .bf{color:var(--tenue);font-weight:600}
+    .b-ref{font-size:12.5px;color:var(--tenue);margin-top:10px;border-top:1px solid var(--grigio-2);padding-top:10px;line-height:1.6}
+    .verdict-head.bad{color:#c8102e}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
@@ -404,6 +412,33 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>Pianifica col budget</h2>
+    <div id="b-stops"></div>
+    <button class="add-stop" id="b-add">+ Aggiungi tappa (max 4)</button>
+    <div class="field"><label>Veicolo</label>
+      <div class="leg-toggle" id="b-veh" style="display:flex;gap:6px;margin-top:2px">
+        <button type="button" data-v="captur" class="on" style="flex:1">Renault Captur</button>
+        <button type="button" data-v="ducati" style="flex:1">Ducati Scrambler</button>
+      </div>
+    </div>
+    <div class="field"><label for="b-budget">Budget <span class="hint">(carburante + pedaggi)</span></label><div class="with-suffix"><input type="number" id="b-budget" min="0" step="5" placeholder="es. 40"><span class="suffix">&euro;</span></div></div>
+    <button class="btn" id="b-calc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Trova percorso nel budget
+    </button>
+    <div class="msg" id="b-msg"></div>
+    <div id="b-result" style="display:none">
+      <div class="ar" style="margin-top:16px">
+        <div class="verdict-head good" id="b-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span id="b-head-txt">&mdash;</span></div>
+        <div class="b-big"><span id="b-cost">0,00</span> &euro; <small>su <span id="b-budget-e">0</span> &euro;</small></div>
+        <div class="b-left ok" id="b-left"></div>
+        <div id="b-legs"></div>
+        <div class="b-ref" id="b-ref"></div>
+      </div>
+    </div>
+  </div>
+
   <p class="note">
     <b>Come funziona.</b> Aggiungi fino a 5 tappe; per ogni tratta scegli <b>Pedaggio</b> o <b>Senza</b>. La mappa del viaggio mostra i punti, le tratte (linea piena = autostrada, tratteggiata = senza pedaggio), km, costo e tempo di ognuna, il <b>traffico</b> in tempo reale (durate HERE all'orario attuale, con eventuale ritardo) e il <b>meteo</b> attuale a ogni tappa (Open-Meteo). Sotto trovi i totali, l'A/R, il confronto tutto-con/tutto-senza pedaggi col verdetto, e la condivisione WhatsApp con tutto il riepilogo.
   </p>
@@ -474,7 +509,7 @@ function renderStops(){
 function setLeg(i,val){legToll[i]=val;renderStops();if(legData)computeTotals();}
 function addStop(){if((stops.length-2)>=5)return;stops.splice(stops.length-1,0,'');legToll.push(true);legData=null;$('results').style.display='none';renderStops();}
 function removeStop(i){stops.splice(i,1);legToll.splice(i,1);legData=null;$('results').style.display='none';renderStops();}
-function readStops(){document.querySelectorAll('.stop-in').forEach(inp=>{stops[+inp.dataset.i]=inp.value;});}
+function readStops(){document.querySelectorAll('#stops .stop-in').forEach(inp=>{stops[+inp.dataset.i]=inp.value;});}
 
 /* ---- tempo / soste ---- */
 function fmtDur(mins){mins=Math.round(mins);const h=Math.floor(mins/60),m=mins%60;if(h&&m)return h+' h '+m+' min';if(h)return h+' h';return m+' min';}
@@ -741,11 +776,93 @@ $('legs').addEventListener('click',openFull);
 $('full-close').addEventListener('click',closeFull);
 $('full-share').addEventListener('click',shareTrip);
 
+/* ---- pianificatore a budget ---- */
+let bStops=['',''], bVeh='captur', bLegData=null;
+function bMsg(t,type){const m=$('b-msg');m.textContent=t;m.className='msg'+(t?(' show '+type):'');}
+function renderBStops(){
+  const c=$('b-stops'); c.innerHTML=''; const n=bStops.length;
+  for(let i=0;i<n;i++){
+    const row=document.createElement('div'); row.className='stop';
+    const dot=document.createElement('span'); dot.className='stop-dot'; dot.textContent=i===0?'A':(i===n-1?'B':String(i));
+    const inp=document.createElement('input'); inp.type='text'; inp.className='stop-in'; inp.dataset.i=i;
+    inp.placeholder=i===0?'Partenza':(i===n-1?'Destinazione':'Tappa '+i); inp.value=bStops[i]||'';
+    inp.addEventListener('input',()=>{bStops[i]=inp.value;bLegData=null;$('b-result').style.display='none';});
+    row.appendChild(dot); row.appendChild(inp);
+    if(i!==0&&i!==n-1){const rm=document.createElement('button');rm.className='stop-rm';rm.innerHTML='&times;';rm.addEventListener('click',()=>{bStops.splice(i,1);bLegData=null;$('b-result').style.display='none';renderBStops();});row.appendChild(rm);}
+    c.appendChild(row);
+  }
+  $('b-add').disabled=(bStops.length-2)>=4;
+}
+function readBStops(){document.querySelectorAll('#b-stops .stop-in').forEach(inp=>{bStops[+inp.dataset.i]=inp.value;});}
+async function bCalc(){
+  readBStops();
+  const pts=bStops.map(s=>s.trim());
+  const budget=parseFloat($('b-budget').value)||0;
+  if(pts.length<2||pts.some(s=>!s)){ bMsg('Compila partenza, destinazione e le tappe.','err'); return; }
+  if(budget<=0){ bMsg('Inserisci un budget maggiore di zero.','err'); return; }
+  const btn=$('b-calc'); btn.disabled=true; bMsg('Calcolo delle opzioni\u2026','ok');
+  try{
+    const jobs=[]; for(let i=0;i<pts.length-1;i++) jobs.push(fetchLeg(pts[i],pts[i+1]));
+    bLegData=await Promise.all(jobs);
+    bMsg('','');
+    optimizeBudget(pts,budget);
+    $('b-result').style.display='block';
+  }catch(e){
+    if(e&&e.type==='noconf') bMsg('La funzione dei pedaggi non risponde.','err');
+    else bMsg('Non riesco a calcolare una tratta ('+((e&&e.err)||'controlla i luoghi')+').','err');
+  }finally{ btn.disabled=false; }
+}
+function optimizeBudget(pts,budget){
+  const cons=vehicles[bVeh].consumo, price=live[vehicles[bVeh].fuel];
+  const per=bLegData.map(l=>({
+    toll:{cost:l.toll.km/100*cons*price+l.toll.toll, min:l.toll.min, km:l.toll.km, toll:l.toll.toll},
+    free:{cost:l.free.km/100*cons*price+l.free.toll, min:l.free.min, km:l.free.km, toll:l.free.toll}
+  }));
+  let chosen=per.map(p=> p.free.cost<=p.toll.cost?'free':'toll');
+  let cost=per.reduce((a,p,i)=>a+p[chosen[i]].cost,0);
+  const minCost=cost;
+  const insufficient = budget < minCost-0.005;
+  if(!insufficient){
+    const cands=[];
+    per.forEach((p,i)=>{ if(chosen[i]==='free'){ const dc=p.toll.cost-p.free.cost, dt=p.free.min-p.toll.min; if(dt>0) cands.push({i,dc,dt}); }});
+    cands.sort((a,b)=> (b.dt/Math.max(b.dc,0.01)) - (a.dt/Math.max(a.dc,0.01)));
+    cands.forEach(u=>{ if(u.dc<=0 || cost+u.dc<=budget+0.005){ chosen[u.i]='toll'; cost+=u.dc; } });
+  }
+  const allToll=chosen.every(c=>c==='toll'), allFree=chosen.every(c=>c==='free');
+  let totKm=0,totMin=0,totCost=0;
+  chosen.forEach((c,i)=>{ totKm+=per[i][c].km; totMin+=per[i][c].min; totCost+=per[i][c].cost; });
+  const time=totMin+breaksMin(totKm);
+  const head=$('b-head'); let ht;
+  if(insufficient){ head.className='verdict-head bad'; ht='Budget insufficiente'; }
+  else if(allToll){ head.className='verdict-head good'; ht='Percorso a pedaggio'; }
+  else if(allFree){ head.className='verdict-head good'; ht='Solo strade libere'; }
+  else { head.className='verdict-head mixed'; ht='Percorso misto'; }
+  $('b-head-txt').textContent=ht;
+  $('b-cost').textContent=fmt(insufficient?minCost:totCost);
+  $('b-budget-e').textContent=fmt0(budget);
+  const left=$('b-left');
+  if(insufficient){ left.className='b-left no'; left.textContent='Mancano '+fmt(minCost-budget)+' \u20ac: il percorso pi\u00f9 economico costa '+fmt(minCost)+' \u20ac ('+fmtDur(time)+').'; }
+  else { left.className='b-left ok'; left.textContent='Ti restano '+fmt(budget-totCost)+' \u20ac \u00b7 '+fmt0(totKm)+' km \u00b7 '+fmtDur(time); }
+  let lh='';
+  chosen.forEach((c,i)=>{ lh+='<div class="b-legrow"><span>'+esc(pts[i])+' \u2192 '+esc(pts[i+1])+'</span><span class="'+(c==='toll'?'bt':'bf')+'">'+(c==='toll'?'pedaggio':'libera')+' \u00b7 '+fmt(per[i][c].cost)+' \u20ac</span></div>'; });
+  $('b-legs').innerHTML=lh;
+  let atCost=0,atMin=0,atKm=0,afCost=0,afMin=0,afKm=0;
+  per.forEach(p=>{ atCost+=p.toll.cost;atMin+=p.toll.min;atKm+=p.toll.km; afCost+=p.free.cost;afMin+=p.free.min;afKm+=p.free.km; });
+  $('b-ref').innerHTML='Riferimento &mdash; tutto a pedaggio: <b>'+fmt(atCost)+' \u20ac</b> ('+fmtDur(atMin+breaksMin(atKm))+') &middot; solo libere: <b>'+fmt(afCost)+' \u20ac</b> ('+fmtDur(afMin+breaksMin(afKm))+').';
+}
+
 /* ---- init ---- */
 initPhotos();
 loadCache();
 renderStops();
 loadVehicle();
+renderBStops();
+bVeh=sel;
+document.querySelectorAll('#b-veh button').forEach(b=>{ b.classList.toggle('on', b.dataset.v===bVeh); });
+$('b-add').addEventListener('click',()=>{ if((bStops.length-2)>=4)return; readBStops(); bStops.splice(bStops.length-1,0,''); bLegData=null; $('b-result').style.display='none'; renderBStops(); });
+$('b-calc').addEventListener('click',bCalc);
+$('b-budget').addEventListener('input',()=>{ if(bLegData) optimizeBudget(bStops.map(s=>s.trim()),parseFloat($('b-budget').value)||0); });
+document.querySelectorAll('#b-veh button').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#b-veh button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); bVeh=b.dataset.v; if(bLegData) optimizeBudget(bStops.map(s=>s.trim()),parseFloat($('b-budget').value)||0); }));
 autoUpdate(DEFAULT_COORD.lat,DEFAULT_COORD.lon);
 </script>
 </body>
