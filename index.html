@@ -290,6 +290,7 @@
     .share a.disabled{opacity:.45;pointer-events:none}
     .wa{background:#25d366;color:#fff}
     .maplink{background:#fafbfc;border:2px solid var(--grigio-2);color:var(--asfalto)}
+    .cmp-t{font-size:11px;color:var(--tenue);margin-top:3px}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
@@ -336,6 +337,16 @@
         <div class="ar-cell"><div class="ar-k">Costo A/R</div><div class="ar-v"><span id="ar-tot">0,00</span> &euro;</div></div>
         <div class="ar-cell"><div class="ar-k">Tempo A/R</div><div class="ar-v" id="ar-time">&mdash;</div></div>
       </div>
+    </div>
+    <div class="ar" id="cmp">
+      <div class="ar-h">Confronto: tutto senza pedaggi</div>
+      <div class="ar-grid">
+        <div class="ar-cell"><div class="ar-k">Tutto con pedaggi (A/R)</div><div class="ar-v"><span id="cmp-toll">0,00</span> &euro;</div><div class="cmp-t" id="cmp-toll-t">&mdash;</div></div>
+        <div class="ar-cell"><div class="ar-k">Tutto senza pedaggi (A/R)</div><div class="ar-v"><span id="cmp-free">0,00</span> &euro;</div><div class="cmp-t" id="cmp-free-t">&mdash;</div></div>
+      </div>
+      <div class="verdict-head good" id="v-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><span id="v-head-txt">&mdash;</span></div>
+      <p class="verdict-line" id="v-cost"></p>
+      <p class="verdict-line" id="v-time"></p>
     </div>
     <div class="share">
       <a id="wa" class="wa disabled" target="_blank" rel="noopener">
@@ -478,7 +489,33 @@ function computeTotals(){
   const arCost=totCost*2, arKm=totKm*2, arDrive=totDrive*2;
   $('ar-tot').textContent=fmt(arCost);
   $('ar-time').textContent=fmtDur(arDrive+breaksMin(arKm));
-  buildShare(pts,{totKm,totToll,totFuel,totDrive,totCost,arCost});
+  // confronto: tutto con pedaggi vs tutto senza pedaggi (su A/R)
+  let tK=0,tT=0,tF=0,tD=0,fK=0,fT=0,fF=0,fD=0;
+  legData.forEach(ld=>{
+    tK+=ld.toll.km; tT+=ld.toll.toll; tF+=ld.toll.km/100*cons*prezzo; tD+=ld.toll.min;
+    fK+=ld.free.km; fT+=ld.free.toll; fF+=ld.free.km/100*cons*prezzo; fD+=ld.free.min;
+  });
+  const tollAR=(tF+tT)*2, freeAR=(fF+fT)*2;
+  const tollTimeAR=tD*2+breaksMin(tK*2), freeTimeAR=fD*2+breaksMin(fK*2);
+  $('cmp-toll').textContent=fmt(tollAR); $('cmp-free').textContent=fmt(freeAR);
+  $('cmp-toll-t').textContent=fmtDur(tollTimeAR)+' \u00b7 '+fmt0(tK*2)+' km';
+  $('cmp-free-t').textContent=fmtDur(freeTimeAR)+' \u00b7 '+fmt0(fK*2)+' km';
+  const costDiff=tollAR-freeAR, timeDiff=freeTimeAR-tollTimeAR;
+  const head=$('v-head');
+  if(costDiff>0.5){
+    head.className='verdict-head good'; $('v-head-txt').textContent='Conviene evitare i pedaggi';
+    $('v-cost').innerHTML='<b>Costo:</b> facendo tutto senza pedaggi risparmi <b>'+fmt(costDiff)+'\u00a0&euro;</b> in A/R.';
+  } else if(costDiff<-0.5){
+    head.className='verdict-head mixed'; $('v-head-txt').textContent='Conviene tenere i pedaggi';
+    $('v-cost').innerHTML='<b>Costo:</b> fare tutto senza pedaggi costa <b>'+fmt(-costDiff)+'\u00a0&euro;</b> in pi\u00f9 in A/R: il giro pi\u00f9 lungo consuma pi\u00f9 carburante di quanto risparmi ai caselli.';
+  } else {
+    head.className='verdict-head good'; $('v-head-txt').textContent='Costo quasi uguale';
+    $('v-cost').innerHTML='<b>Costo:</b> con o senza pedaggi la spesa A/R \u00e8 quasi identica (differenza '+fmt(Math.abs(costDiff))+'\u00a0&euro;).';
+  }
+  if(timeDiff>1) $('v-time').innerHTML='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(timeDiff)+'</b> in pi\u00f9 in A/R.';
+  else if(timeDiff<-1) $('v-time').innerHTML='<b>Tempo:</b> senza pedaggi impieghi <b>'+fmtDur(-timeDiff)+'</b> in meno in A/R.';
+  else $('v-time').innerHTML='<b>Tempo:</b> tempi A/R quasi uguali con o senza pedaggi.';
+  buildShare(pts,{totKm,totToll,totFuel,totDrive,totCost,arCost,tollAR,freeAR,costDiff,timeDiff});
 }
 
 /* ---- condivisione ---- */
@@ -503,6 +540,13 @@ function buildShare(pts,t){
   L.push('');
   L.push('Totale andata: '+fmt0(t.totKm)+' km, '+fmtDur(t.totDrive+breaksMin(t.totKm))+', costo '+fmt(t.totCost)+' EUR');
   L.push('Andata e ritorno: '+fmt(t.arCost)+' EUR');
+  if(typeof t.costDiff==='number'){
+    L.push('');
+    L.push('Confronto A/R: tutto con pedaggi '+fmt(t.tollAR)+' EUR, tutto senza '+fmt(t.freeAR)+' EUR.');
+    if(t.costDiff>0.5) L.push('Evitando i pedaggi risparmi '+fmt(t.costDiff)+' EUR'+(t.timeDiff>1?' ma impieghi '+fmtDur(t.timeDiff)+' in piu':'')+' (A/R).');
+    else if(t.costDiff<-0.5) L.push('Tenere i pedaggi conviene: risparmi '+fmt(-t.costDiff)+' EUR'+(t.timeDiff>1?' e '+fmtDur(t.timeDiff):'')+' (A/R).');
+    else L.push('Con o senza pedaggi il costo A/R e quasi uguale.');
+  }
   L.push('');
   L.push('Mappa: '+map);
   $('wa').href='https://wa.me/?text='+encodeURIComponent(L.join('\n'));
