@@ -333,12 +333,40 @@
     #b-map{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-family:var(--display);font-weight:700;font-size:14px;padding:14px 10px;border-radius:12px;margin-top:12px}
     #b-map svg{width:18px;height:18px}
     .cons-info{font-size:14px;font-weight:600;padding:12px 14px;background:#f4f6f7;border:1.5px solid var(--grigio-2);border-radius:10px;color:var(--asfalto)}
+    .loc-row{display:flex;gap:8px;margin:2px 0 12px}
+    .mini-btn{display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--body);font-weight:600;font-size:12.5px;color:var(--verde);background:#eef6f0;border:1.5px solid #bfe0cd;border-radius:9px;padding:8px 10px;cursor:pointer;flex:1}
+    .mini-btn svg{width:14px;height:14px}
+    .mini-btn.wide{width:100%;flex:none}
+    .mini-btn:disabled{opacity:.5;cursor:default}
+    .ac-box{position:absolute;z-index:2000;background:#fff;border:1.5px solid var(--grigio-2);border-radius:10px;box-shadow:0 12px 30px -10px rgba(20,25,30,.28);max-height:240px;overflow-y:auto}
+    .ac-item{padding:11px 13px;font-size:14px;cursor:pointer;border-bottom:1px solid #f0f2f4}
+    .ac-item:last-child{border-bottom:none}
+    .ac-item:hover{background:#eef6f0}
+    .sub2{font-size:13px;color:var(--tenue);margin-bottom:12px;line-height:1.5}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .chip{display:inline-flex;align-items:center;gap:7px;background:#f4f6f7;border:1.5px solid var(--grigio-2);border-radius:20px;padding:7px 8px 7px 13px;font-size:13px;font-weight:600;cursor:pointer}
+    .chip .x{width:18px;height:18px;border-radius:50%;background:var(--grigio-2);color:var(--asfalto);display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1}
+    .hist{margin-top:12px}
+    .hist-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-top:1px solid var(--grigio-2)}
+    .hist-row .d{color:var(--tenue)}
+    .hist-tot{font-size:13px;font-weight:700;margin-top:10px;color:var(--verde)}
+    .hist-clear{font-size:12px;color:#c8102e;background:none;border:none;cursor:pointer;margin-top:8px;padding:0}
+    .fuel-box{background:var(--bianco);border:2px solid var(--grigio-2);border-radius:16px;padding:16px 18px;margin-top:14px}
+    .fuel-box h3{font-family:var(--display);font-weight:800;font-size:14px;margin-bottom:4px}
+    .fuel-box .fh{font-size:12px;color:var(--tenue);margin-bottom:10px}
+    .fuel-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-top:1px solid var(--grigio-2)}
+    .fuel-row .fp{font-family:var(--display);font-weight:800;color:var(--verde);white-space:nowrap}
+    .fuel-row .fn{font-weight:600} .fuel-row .fa{color:var(--tenue);font-size:12px}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
   <div class="card">
     <h2>Percorso</h2>
     <div id="stops"></div>
+    <div class="loc-row">
+      <button type="button" class="mini-btn" id="use-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> Usa la mia posizione</button>
+      <button type="button" class="mini-btn" id="swap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M4 7l3-3 3 3M17 20V7M14 17l3 3 3-3"/></svg> Inverti</button>
+    </div>
     <button class="add-stop" id="add-stop">+ Aggiungi tappa (max 5)</button>
     <button class="btn" id="calc">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -401,6 +429,7 @@
         Apri in Google Maps
       </a>
     </div>
+    <div class="fuel-box" id="fuel-box" style="display:none"></div>
   </div>
 
   <div class="full" id="full" style="display:none">
@@ -418,6 +447,10 @@
   <div class="card">
     <h2>Pianifica col budget</h2>
     <div id="b-stops"></div>
+    <div class="loc-row">
+      <button type="button" class="mini-btn" id="b-use-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> Usa la mia posizione</button>
+      <button type="button" class="mini-btn" id="b-swap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v13M4 7l3-3 3 3M17 20V7M14 17l3 3 3-3"/></svg> Inverti</button>
+    </div>
     <button class="add-stop" id="b-add">+ Aggiungi tappa (max 4)</button>
     <div class="field"><label>Veicolo</label>
       <div class="leg-toggle" id="b-veh" style="display:flex;gap:6px;margin-top:2px">
@@ -444,6 +477,17 @@
         Apri il percorso in Google Maps
       </a>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>Tratte salvate e storico</h2>
+    <p class="sub2">Salva i percorsi che rifai spesso e rivedi i viaggi calcolati. Tutto resta su questo telefono.</p>
+    <button class="mini-btn wide" id="save-route" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Salva la tratta calcolata</button>
+    <div id="saved-list" class="chips"></div>
+    <details id="hist-wrap">
+      <summary>Storico viaggi</summary>
+      <div id="hist-body" class="hist"></div>
+    </details>
   </div>
 
   <p class="note">
@@ -548,6 +592,11 @@ async function calcola(){
     showMsg('Calcolate '+nL+' tratt'+(nL>1?'e':'a')+'.','ok');
     computeTotals();
     $('results').style.display='grid';
+    const dd=new Date();
+    addHistory({date:dd.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}), ym:dd.getFullYear()+'-'+(dd.getMonth()+1), route:pts.join(' \u2192 '), cost:tripInfo?tripInfo.totals.cost:0});
+    renderHistory();
+    $('save-route').disabled=false;
+    loadFuelStations(pts.map((p,i)=>stopCoord(i)));
   }catch(e){
     legData=null;
     if(e&&e.type==='noconf') showMsg('La funzione dei pedaggi non risponde (HERE_API_KEY su Netlify).','err');
@@ -865,6 +914,95 @@ function optimizeBudget(pts,budget){
   if(allFree) bmap+='&avoid=tolls';
   $('b-map').href=bmap;
 }
+
+/* ---- autocomplete luoghi ---- */
+let acInput=null, acTimer=null, acPicked=false;
+const acBox=document.createElement('div'); acBox.className='ac-box'; acBox.style.display='none'; document.body.appendChild(acBox);
+function acHide(){ acBox.style.display='none'; }
+function acPos(inp){ const r=inp.getBoundingClientRect(); acBox.style.left=(r.left+window.scrollX)+'px'; acBox.style.top=(r.bottom+window.scrollY+4)+'px'; acBox.style.width=r.width+'px'; }
+async function acFetch(inp){
+  const query=inp.value.trim(); if(query.length<3){ acHide(); return; }
+  try{
+    const r=await fetch(TOLL_API+'?mode=suggest&q='+encodeURIComponent(query));
+    const arr=await r.json(); if(inp!==acInput) return;
+    if(!Array.isArray(arr)||!arr.length){ acHide(); return; }
+    acBox.innerHTML=arr.map(s=>'<div class="ac-item" data-l="'+encodeURIComponent(s.label)+'">'+esc(s.label)+'</div>').join('');
+    acPos(inp); acBox.style.display='block';
+  }catch(e){ acHide(); }
+}
+document.addEventListener('focusin',e=>{ if(e.target.classList&&e.target.classList.contains('stop-in')) acInput=e.target; });
+document.addEventListener('input',e=>{ if(e.target.classList&&e.target.classList.contains('stop-in')){ if(acPicked){acPicked=false;return;} acInput=e.target; clearTimeout(acTimer); acTimer=setTimeout(()=>acFetch(e.target),260); } });
+acBox.addEventListener('mousedown',e=>{ const it=e.target.closest('.ac-item'); if(!it||!acInput)return; e.preventDefault(); acPicked=true; acInput.value=decodeURIComponent(it.dataset.l); acInput.dispatchEvent(new Event('input',{bubbles:true})); acHide(); });
+document.addEventListener('click',e=>{ if(e.target!==acInput && !acBox.contains(e.target)) acHide(); });
+window.addEventListener('scroll',()=>{ if(acBox.style.display==='block'&&acInput) acPos(acInput); }, true);
+
+/* ---- usa la mia posizione / inverti ---- */
+function useMyLocation(applyLabel, btn){
+  if(!navigator.geolocation){ alert('Geolocalizzazione non disponibile su questo browser.'); return; }
+  if(btn) btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{ const r=await fetch(TOLL_API+'?mode=reverse&at='+pos.coords.latitude+','+pos.coords.longitude); const d=await r.json(); if(d&&d.label) applyLabel(d.label); }
+    catch(e){} finally{ if(btn) btn.disabled=false; }
+  }, ()=>{ if(btn) btn.disabled=false; alert('Posizione non disponibile: consenti l\u2019accesso nelle impostazioni.'); }, {timeout:9000});
+}
+$('use-loc').addEventListener('click',()=>useMyLocation(l=>{ stops[0]=l; legData=null; $('results').style.display='none'; renderStops(); }, $('use-loc')));
+$('swap').addEventListener('click',()=>{ readStops(); stops.reverse(); legToll.reverse(); legData=null; $('results').style.display='none'; renderStops(); });
+$('b-use-loc').addEventListener('click',()=>useMyLocation(l=>{ bStops[0]=l; bLegData=null; $('b-result').style.display='none'; renderBStops(); }, $('b-use-loc')));
+$('b-swap').addEventListener('click',()=>{ readBStops(); bStops.reverse(); bLegData=null; $('b-result').style.display='none'; renderBStops(); });
+
+/* ---- tratte salvate + storico ---- */
+function loadJSON(k,def){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function saveJSON(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function renderSaved(){
+  const arr=loadJSON('savedRoutes',[]); const box=$('saved-list'); box.innerHTML='';
+  arr.forEach((s,idx)=>{
+    const chip=document.createElement('div'); chip.className='chip';
+    const lbl=document.createElement('span'); lbl.textContent=s.name;
+    lbl.addEventListener('click',()=>{ stops=s.stops.slice(); legToll=(s.legToll&&s.legToll.length===s.stops.length-1)?s.legToll.slice():s.stops.slice(0,-1).map(()=>true); if(s.veh){ sel=s.veh; document.querySelectorAll('.veh').forEach(x=>x.classList.toggle('sel',x.dataset.v===sel)); loadVehicle(); } legData=null; $('results').style.display='none'; renderStops(); window.scrollTo({top:0,behavior:'smooth'}); });
+    const x=document.createElement('span'); x.className='x'; x.innerHTML='&times;'; x.addEventListener('click',e=>{ e.stopPropagation(); const a=loadJSON('savedRoutes',[]); a.splice(idx,1); saveJSON('savedRoutes',a); renderSaved(); });
+    chip.appendChild(lbl); chip.appendChild(x); box.appendChild(chip);
+  });
+}
+function saveCurrentRoute(){
+  const pts=stops.map(s=>s.trim()); if(pts.length<2||pts.some(s=>!s)) return;
+  const name=pts[0]+' \u2192 '+pts[pts.length-1]+(pts.length>2?' (+'+(pts.length-2)+')':'');
+  const arr=loadJSON('savedRoutes',[]); arr.unshift({name, stops:pts, legToll:legToll.slice(), veh:sel});
+  saveJSON('savedRoutes', arr.slice(0,12)); renderSaved();
+}
+function addHistory(rec){ const arr=loadJSON('history',[]); arr.unshift(rec); saveJSON('history', arr.slice(0,60)); }
+function renderHistory(){
+  const arr=loadJSON('history',[]); const box=$('hist-body');
+  if(!arr.length){ box.innerHTML='<div class="sub2" style="margin:0">Nessun viaggio calcolato ancora.</div>'; return; }
+  const now=new Date(); const ym=now.getFullYear()+'-'+(now.getMonth()+1); let monthTot=0; let h='';
+  arr.forEach(r=>{ h+='<div class="hist-row"><span class="d">'+r.date+' \u00b7 '+esc(r.route)+'</span><span>'+fmt(r.cost)+' \u20ac</span></div>'; if(r.ym===ym) monthTot+=r.cost; });
+  h+='<div class="hist-tot">Totale questo mese: '+fmt(monthTot)+' \u20ac</div><button class="hist-clear" id="hist-clear">Svuota storico</button>';
+  box.innerHTML=h; const c=document.getElementById('hist-clear'); if(c) c.addEventListener('click',()=>{ saveJSON('history',[]); renderHistory(); });
+}
+$('save-route').addEventListener('click',saveCurrentRoute);
+
+/* ---- distributori pi\u00f9 convenienti sulla tratta ---- */
+async function loadFuelStations(coords){
+  const box=$('fuel-box'); const fuel=vehicles[sel].fuel; const label=fuel==='gpl'?'GPL':'benzina';
+  const pts=(coords||[]).filter(c=>c&&c.lat!=null);
+  if(!pts.length){ box.style.display='none'; return; }
+  const sample = pts.length<=4?pts:[pts[0],pts[Math.floor(pts.length/3)],pts[Math.floor(2*pts.length/3)],pts[pts.length-1]];
+  box.style.display='block';
+  box.innerHTML='<h3>Distributori '+label+' pi\u00f9 convenienti</h3><div class="fh">Ricerca lungo il percorso\u2026</div>';
+  try{
+    const lists=await Promise.all(sample.map(async c=>{
+      try{ const r=await fetch('https://prezzi-carburante.onrender.com/api/distributori?latitude='+c.lat+'&longitude='+c.lng+'&distance=8&fuel='+fuel+'&results=4'); const a=await r.json(); return Array.isArray(a)?a:[]; }catch(e){ return []; }
+    }));
+    const seen={}; const all=[];
+    lists.forEach(list=>list.forEach(s=>{ if(s&&s.prezzo>0){ const key=(s.gestore||'')+'|'+(s.indirizzo||''); if(!seen[key]){ seen[key]=1; all.push(s); } } }));
+    all.sort((a,b)=>a.prezzo-b.prezzo);
+    const top=all.slice(0,3);
+    if(!top.length){ box.innerHTML='<h3>Distributori '+label+'</h3><div class="fh">Nessun distributore trovato lungo il percorso.</div>'; return; }
+    let h='<h3>Distributori '+label+' pi\u00f9 convenienti</h3><div class="fh">Vicino alle tappe del tuo percorso.</div>';
+    top.forEach(s=>{ const addr=(s.indirizzo||'').split(/\s+/).slice(0,6).join(' '); h+='<div class="fuel-row"><span><span class="fn">'+esc(s.gestore||'Distributore')+'</span><br><span class="fa">'+esc(addr)+'</span></span><span class="fp">'+fmt3(s.prezzo)+' \u20ac/L</span></div>'; });
+    box.innerHTML=h;
+  }catch(e){ box.style.display='none'; }
+}
+renderSaved(); renderHistory();
 
 /* ---- init ---- */
 initPhotos();
