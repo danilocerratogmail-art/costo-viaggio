@@ -30,7 +30,8 @@ exports.handler = async (event) => {
       const r = await fetch(u); const d = await r.json().catch(() => ({}));
       const it = d.items && d.items[0];
       if (!it) return { statusCode: 200, headers, body: JSON.stringify({ error: "nessun risultato" }) };
-      return { statusCode: 200, headers, body: JSON.stringify({ label: it.title, lat: it.position && it.position.lat, lng: it.position && it.position.lng }) };
+      const a = it.address || {};
+      return { statusCode: 200, headers, body: JSON.stringify({ label: it.title, city: a.city || a.district || a.county || "", lat: it.position && it.position.lat, lng: it.position && it.position.lng }) };
     } catch (e) { return { statusCode: 500, headers, body: JSON.stringify({ error: String(e) }) }; }
   }
 
