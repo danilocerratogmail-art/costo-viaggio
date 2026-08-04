@@ -332,6 +332,7 @@
     .verdict-head.bad{color:#c8102e}
     #b-map{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-family:var(--display);font-weight:700;font-size:14px;padding:14px 10px;border-radius:12px;margin-top:12px}
     #b-map svg{width:18px;height:18px}
+    .cons-info{font-size:14px;font-weight:600;padding:12px 14px;background:#f4f6f7;border:1.5px solid var(--grigio-2);border-radius:10px;color:var(--asfalto)}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
@@ -349,7 +350,7 @@
       <summary>Parametri e impostazioni</summary>
       <div class="adv">
         <div class="row">
-          <div class="field"><label for="cons">Consumo</label><div class="with-suffix"><input type="number" id="cons" min="0" step="0.1"><span class="suffix">L/100</span></div></div>
+          <div class="field"><label>Consumo</label><div class="cons-info" id="cons-info"></div></div>
           <div class="field"><label for="prezzo">Prezzo carburante</label><div class="with-suffix"><input type="number" id="prezzo" min="0" step="0.01"><span class="suffix">&euro;/L</span></div></div>
         </div>
         <div class="row">
@@ -457,7 +458,9 @@ const fmt0=n=>n.toLocaleString('it-IT',{maximumFractionDigits:0});
 const fmt3=n=>n.toLocaleString('it-IT',{minimumFractionDigits:3,maximumFractionDigits:3});
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const vehicles={captur:{fuel:'gpl',consumo:7.8,label:'Renault Captur (GPL)'},ducati:{fuel:'benzina',consumo:5.5,label:'Ducati Scrambler (Benzina)'}};
+const vehicles={captur:{fuel:'gpl',consumo:7.8,consAuto:7.2,consLibere:9.0,label:'Renault Captur (GPL)'},ducati:{fuel:'benzina',consumo:5.5,label:'Ducati Scrambler (Benzina)'}};
+// consumo l/100km per veicolo e tipo di tratta (useToll=true -> autostrada, false -> urbano/extraurbano)
+function consFor(vk,useToll){const V=vehicles[vk];if(vk==='captur')return useToll?V.consAuto:V.consLibere;return V.consumo;}
 const FALLBACK={benzina:1.98,gpl:0.76};
 let sel='captur';
 let live={benzina:FALLBACK.benzina,gpl:FALLBACK.gpl};
@@ -475,7 +478,8 @@ document.querySelectorAll('.foto-rm').forEach(b=>b.addEventListener('click',e=>{
 
 /* ---- veicoli ---- */
 document.querySelectorAll('.veh').forEach(el=>el.addEventListener('click',()=>{document.querySelectorAll('.veh').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.v;loadVehicle();}));
-function loadVehicle(){$('cons').value=vehicles[sel].consumo;priceTouched=false;applyPrice();if(legData)computeTotals();}
+function setConsInfo(){const el=$('cons-info');if(!el)return;el.textContent = sel==='captur' ? 'Autostrada 7,2 \u00b7 Libere 9,0 L/100' : (String(vehicles.ducati.consumo).replace('.',',')+' L/100');}
+function loadVehicle(){setConsInfo();priceTouched=false;applyPrice();if(legData)computeTotals();}
 function applyPrice(){$('p-benz').textContent=fmt3(live.benzina);$('p-gpl').textContent=fmt3(live.gpl);if(!priceTouched)$('prezzo').value=live[vehicles[sel].fuel];}
 
 /* ---- prezzi live ---- */
@@ -587,7 +591,7 @@ async function loadWeather(coords){
 function stopCoord(i){if(i<legData.length&&legData[i].from)return legData[i].from;if(legData.length)return legData[legData.length-1].to;return null;}
 function computeTotals(){
   if(!legData)return;
-  const cons=parseFloat($('cons').value)||0, prezzo=parseFloat($('prezzo').value)||0;
+  const prezzo=parseFloat($('prezzo').value)||0;
   const pts=stops.map(s=>s.trim());
   let totKm=0,totToll=0,totFuel=0,totDrive=0; let rows=''; const coords=[]; const legsInfo=[];
   for(let i=0;i<pts.length;i++){
@@ -597,7 +601,7 @@ function computeTotals(){
         +'<div class="tl-stop-c"><div class="tl-name">'+esc(pts[i])+'</div><div class="tl-wx" id="wx-'+i+'"></div></div></div>';
     if(i<pts.length-1){
       const useToll=legToll[i]!==false; const v=useToll?legData[i].toll:legData[i].free;
-      const fuel=v.km/100*cons*prezzo, cost=fuel+v.toll, delay=Math.max(0,Math.round((v.min||0)-(v.base||0)));
+      const fuel=v.km/100*consFor(sel,useToll)*prezzo, cost=fuel+v.toll, delay=Math.max(0,Math.round((v.min||0)-(v.base||0)));
       totKm+=v.km; totToll+=v.toll; totFuel+=fuel; totDrive+=v.min;
       legsInfo.push({a:pts[i],b:pts[i+1],useToll:useToll,km:v.km,min:v.min,delay:delay,fuel:fuel,toll:v.toll});
       rows+='<div class="tl-row tl-seg-row '+(useToll?'toll':'free')+'"><div class="tl-rail"><span class="tl-line"></span></div>'
@@ -621,8 +625,8 @@ function computeTotals(){
   // confronto: tutto con pedaggi vs tutto senza pedaggi (su A/R)
   let tK=0,tT=0,tF=0,tD=0,fK=0,fT=0,fF=0,fD=0;
   legData.forEach(ld=>{
-    tK+=ld.toll.km; tT+=ld.toll.toll; tF+=ld.toll.km/100*cons*prezzo; tD+=ld.toll.min;
-    fK+=ld.free.km; fT+=ld.free.toll; fF+=ld.free.km/100*cons*prezzo; fD+=ld.free.min;
+    tK+=ld.toll.km; tT+=ld.toll.toll; tF+=ld.toll.km/100*consFor(sel,true)*prezzo; tD+=ld.toll.min;
+    fK+=ld.free.km; fT+=ld.free.toll; fF+=ld.free.km/100*consFor(sel,false)*prezzo; fD+=ld.free.min;
   });
   const tollAR=(tF+tT)*2, freeAR=(fF+fT)*2;
   const tollTimeAR=tD*2+breaksMin(tK*2), freeTimeAR=fD*2+breaksMin(fK*2);
@@ -663,13 +667,13 @@ function buildMaps(pts){
 function buildShare(pts,t){
   const map=buildMaps(pts);
   $('map-all').href=map; $('map-all').classList.remove('disabled');
-  const cons=parseFloat($('cons').value)||0, prezzo=parseFloat($('prezzo').value)||0;
+  const prezzo=parseFloat($('prezzo').value)||0;
   const L=[];
   L.push('Costo Viaggio - '+vehicles[sel].label);
   L.push(pts.join(' \u2192 '));
   L.push('');
   L.push('Tratte:');
-  legData.forEach((ld,i)=>{const useToll=legToll[i]!==false;const v=useToll?ld.toll:ld.free;const fuel=v.km/100*cons*prezzo;
+  legData.forEach((ld,i)=>{const useToll=legToll[i]!==false;const v=useToll?ld.toll:ld.free;const fuel=v.km/100*consFor(sel,useToll)*prezzo;
     L.push((i+1)+'. '+pts[i]+' \u2192 '+pts[i+1]+' ('+(useToll?'con pedaggio':'senza pedaggio')+'): '+fmt0(v.km)+' km, '+fmtDur(v.min)+', pedaggio '+fmt(v.toll)+' EUR, carburante '+fmt(fuel)+' EUR');});
   L.push('');
   L.push('Totale andata: '+fmt0(t.totKm)+' km, '+fmtDur(t.totDrive+breaksMin(t.totKm))+', costo '+fmt(t.totCost)+' EUR');
@@ -771,7 +775,7 @@ function openFull(){
 function closeFull(){ $('full').style.display='none'; document.body.style.overflow=''; }
 
 
-['cons','pausaOgni','pausaMin'].forEach(id=>$(id).addEventListener('input',()=>{if(legData)computeTotals();}));
+['pausaOgni','pausaMin'].forEach(id=>$(id).addEventListener('input',()=>{if(legData)computeTotals();}));
 $('prezzo').addEventListener('input',()=>{priceTouched=true;if(legData)computeTotals();});
 $('add-stop').addEventListener('click',addStop);
 $('calc').addEventListener('click',calcola);
@@ -819,10 +823,10 @@ async function bCalc(){
   }finally{ btn.disabled=false; }
 }
 function optimizeBudget(pts,budget){
-  const cons=vehicles[bVeh].consumo, price=live[vehicles[bVeh].fuel];
+  const price=live[vehicles[bVeh].fuel];
   const per=bLegData.map(l=>({
-    toll:{cost:l.toll.km/100*cons*price+l.toll.toll, min:l.toll.min, km:l.toll.km, toll:l.toll.toll},
-    free:{cost:l.free.km/100*cons*price+l.free.toll, min:l.free.min, km:l.free.km, toll:l.free.toll}
+    toll:{cost:l.toll.km/100*consFor(bVeh,true)*price+l.toll.toll, min:l.toll.min, km:l.toll.km, toll:l.toll.toll},
+    free:{cost:l.free.km/100*consFor(bVeh,false)*price+l.free.toll, min:l.free.min, km:l.free.km, toll:l.free.toll}
   }));
   let chosen=per.map(p=> p.free.cost<=p.toll.cost?'free':'toll');
   let cost=per.reduce((a,p,i)=>a+p[chosen[i]].cost,0);
