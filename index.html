@@ -251,8 +251,8 @@
     </div>
 
     <div class="fuelbar">
-      <span class="pz">Benzina <b class="val" id="p-benz">&mdash;</b> &euro;/L</span>
-      <span class="pz">GPL <b class="val" id="p-gpl">&mdash;</b> &euro;/L</span>
+      <span class="pz" id="pz-benz">Benzina <b class="val" id="p-benz">&mdash;</b> &euro;/L</span>
+      <span class="pz" id="pz-gpl">GPL <b class="val" id="p-gpl">&mdash;</b> &euro;/L</span>
       <button id="refresh" title="Aggiorna prezzi">&#8635;</button>
       <div class="fuelts" id="fuelts">Prezzi in aggiornamento&hellip;</div>
     </div>
@@ -357,6 +357,20 @@
     .fuel-row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:8px 0;border-top:1px solid var(--grigio-2)}
     .fuel-row .fp{font-family:var(--display);font-weight:800;color:var(--verde);white-space:nowrap}
     .fuel-row .fn{font-weight:600} .fuel-row .fa{color:var(--tenue);font-size:12px}
+    .fuel-row{cursor:pointer}
+    .fuel-row:hover{background:#f4f6f7}
+    .fuel-row .fp{text-align:right}
+    .fadd{display:inline-block;margin-top:4px;font-family:var(--body);font-size:11px;font-weight:700;color:var(--verde);background:#e7f3ec;border-radius:20px;padding:2px 9px}
+    .fkm{font-size:11px;font-weight:700;color:var(--verde);background:#e7f3ec;border-radius:20px;padding:2px 7px;white-space:nowrap}
+    .fkm.neg{color:#c8641f;background:#fdf0e6}
+    .inc-box{background:var(--bianco);border:2px solid var(--grigio-2);border-radius:16px;padding:16px 18px;margin-top:14px}
+    .inc-box h3{font-family:var(--display);font-weight:800;font-size:14px;margin-bottom:4px}
+    .inc-box .fh{font-size:12px;color:var(--tenue);margin-bottom:10px}
+    .inc-row{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:9px 0;border-top:1px solid var(--grigio-2)}
+    .inc-t{font-family:var(--display);font-weight:800;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:20px;white-space:nowrap;flex:0 0 auto}
+    .inc-row.bad .inc-t{background:#fdeceb;color:#c8102e}
+    .inc-row.mid .inc-t{background:#fdf0e6;color:#c8641f}
+    .inc-x{color:var(--asfalto)}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
@@ -429,6 +443,7 @@
         Apri in Google Maps
       </a>
     </div>
+    <div class="inc-box" id="inc-box" style="display:none"></div>
     <div class="fuel-box" id="fuel-box" style="display:none"></div>
   </div>
 
@@ -524,7 +539,7 @@ document.querySelectorAll('.foto-rm').forEach(b=>b.addEventListener('click',e=>{
 document.querySelectorAll('.veh').forEach(el=>el.addEventListener('click',()=>{document.querySelectorAll('.veh').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');sel=el.dataset.v;loadVehicle();}));
 function setConsInfo(){const el=$('cons-info');if(!el)return;el.textContent = sel==='captur' ? 'Autostrada 7,2 \u00b7 Libere 9,0 L/100' : (String(vehicles.ducati.consumo).replace('.',',')+' L/100');}
 function loadVehicle(){setConsInfo();priceTouched=false;applyPrice();if(legData)computeTotals();}
-function applyPrice(){$('p-benz').textContent=fmt3(live.benzina);$('p-gpl').textContent=fmt3(live.gpl);if(!priceTouched)$('prezzo').value=live[vehicles[sel].fuel];}
+function applyPrice(){$('p-benz').textContent=fmt3(live.benzina);$('p-gpl').textContent=fmt3(live.gpl);const f=vehicles[sel].fuel;$('pz-benz').style.display=(f==='benzina'?'':'none');$('pz-gpl').style.display=(f==='gpl'?'':'none');if(!priceTouched)$('prezzo').value=live[f];}
 
 /* ---- prezzi live ---- */
 function setStatus(t,cls){const e=$('fuelts');e.textContent=t;e.className='fuelts'+(cls?' '+cls:'');}
@@ -576,8 +591,8 @@ async function fetchLeg(a,b){
   const d=await r.json();
   if(d.configured===false) throw {type:'noconf'};
   if(!d.found) throw {type:'notfound',err:d.error};
-  const toll={km:d.distanceKm||0,min:d.durationMin||0,base:(d.baseMin!=null?d.baseMin:d.durationMin)||0,toll:d.toll||0,cur:d.currency||'EUR'};
-  const free=d.free?{km:d.free.distanceKm||toll.km,min:d.free.durationMin||toll.min,base:(d.free.baseMin!=null?d.free.baseMin:(d.free.durationMin||toll.min)),toll:d.free.toll||0}:{km:toll.km,min:toll.min,base:toll.base,toll:toll.toll};
+  const toll={km:d.distanceKm||0,min:d.durationMin||0,base:(d.baseMin!=null?d.baseMin:d.durationMin)||0,toll:d.toll||0,cur:d.currency||'EUR',polys:d.polys||[]};
+  const free=d.free?{km:d.free.distanceKm||toll.km,min:d.free.durationMin||toll.min,base:(d.free.baseMin!=null?d.free.baseMin:(d.free.durationMin||toll.min)),toll:d.free.toll||0,polys:d.free.polys||[]}:{km:toll.km,min:toll.min,base:toll.base,toll:toll.toll,polys:toll.polys};
   return {toll,free,from:(d.fromLat!=null?{lat:d.fromLat,lng:d.fromLng}:null),to:(d.toLat!=null?{lat:d.toLat,lng:d.toLng}:null)};
 }
 async function calcola(){
@@ -596,7 +611,9 @@ async function calcola(){
     addHistory({date:dd.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}), ym:dd.getFullYear()+'-'+(dd.getMonth()+1), route:pts.join(' \u2192 '), cost:tripInfo?tripInfo.totals.cost:0});
     renderHistory();
     $('save-route').disabled=false;
-    loadFuelStations(pts.map((p,i)=>stopCoord(i)));
+    const geom=chosenRouteGeom();
+    loadFuelStations(geom.points, stopCoord(0), stopCoord(stops.length-1));
+    loadIncidents(geom.polys);
   }catch(e){
     legData=null;
     if(e&&e.type==='noconf') showMsg('La funzione dei pedaggi non risponde (HERE_API_KEY su Netlify).','err');
@@ -981,28 +998,79 @@ function renderHistory(){
 $('save-route').addEventListener('click',saveCurrentRoute);
 
 /* ---- distributori pi\u00f9 convenienti sulla tratta ---- */
-async function loadFuelStations(coords){
+function haversine(a,b){ if(!a||!b||a.lat==null||b.lat==null)return null; const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180,la1=a.lat*Math.PI/180,la2=b.lat*Math.PI/180; const x=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+function decodeFlex(encoded){
+  const ENC='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'; const DEC={}; for(let i=0;i<ENC.length;i++)DEC[ENC[i]]=i;
+  const nums=[]; let shift=0,val=0;
+  for(let i=0;i<encoded.length;i++){ const c=DEC[encoded[i]]; if(c===undefined)continue; val|=(c&0x1F)<<shift; if(c&0x20){shift+=5;} else {nums.push(val);val=0;shift=0;} }
+  if(nums.length<2)return [];
+  const header=nums[1], precision=header&15, thirdDim=(header>>4)&7, factor=Math.pow(10,precision), stride=thirdDim?3:2;
+  const zz=n=>(n>>1)^(-(n&1)); const pts=[]; let lat=0,lng=0;
+  for(let i=2;i+1<nums.length;i+=stride){ lat+=zz(nums[i]); lng+=zz(nums[i+1]); pts.push({lat:lat/factor,lng:lng/factor}); }
+  return pts;
+}
+function segDist(px,py,ax,ay,bx,by){ const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy; let t=l2?((px-ax)*dx+(py-ay)*dy)/l2:0; t=Math.max(0,Math.min(1,t)); return Math.hypot(px-(ax+t*dx),py-(ay+t*dy)); }
+function distToRoute(pt,line){ if(!line.length)return Infinity; const la=pt.lat*Math.PI/180,mLat=111320,mLng=111320*Math.cos(la),px=pt.lng*mLng,py=pt.lat*mLat; let best=Infinity; for(let i=0;i+1<line.length;i++){ best=Math.min(best,segDist(px,py,line[i].lng*mLng,line[i].lat*mLat,line[i+1].lng*mLng,line[i+1].lat*mLat)); } return best; }
+function chosenRouteGeom(){ let pts=[]; const polys=[]; legData.forEach((ld,i)=>{ const v=(legToll[i]!==false)?ld.toll:ld.free; (v.polys||[]).forEach(p=>{ polys.push(p); pts=pts.concat(decodeFlex(p)); }); }); return {points:pts, polys}; }
+
+async function loadFuelStations(routePts, partenza, meta){
   const box=$('fuel-box'); const fuel=vehicles[sel].fuel; const label=fuel==='gpl'?'GPL':'benzina';
-  const pts=(coords||[]).filter(c=>c&&c.lat!=null);
-  if(!pts.length){ box.style.display='none'; return; }
-  const sample = pts.length<=4?pts:[pts[0],pts[Math.floor(pts.length/3)],pts[Math.floor(2*pts.length/3)],pts[pts.length-1]];
+  if(!routePts||routePts.length<2){ box.style.display='none'; return; }
+  const step=Math.max(1,Math.floor(routePts.length/700)); const line=[];
+  for(let i=0;i<routePts.length;i+=step) line.push(routePts[i]); line.push(routePts[routePts.length-1]);
+  const nq=Math.min(8,Math.max(3,Math.ceil(line.length/45))); const sample=[];
+  for(let k=0;k<nq;k++) sample.push(line[Math.floor(k*(line.length-1)/(nq-1))]);
   box.style.display='block';
   box.innerHTML='<h3>Distributori '+label+' pi\u00f9 convenienti</h3><div class="fh">Ricerca lungo il percorso\u2026</div>';
   try{
-    const lists=await Promise.all(sample.map(async c=>{
-      try{ const r=await fetch('https://prezzi-carburante.onrender.com/api/distributori?latitude='+c.lat+'&longitude='+c.lng+'&distance=8&fuel='+fuel+'&results=4'); const a=await r.json(); return Array.isArray(a)?a:[]; }catch(e){ return []; }
-    }));
+    const lists=await Promise.all(sample.map(async c=>{ try{ const r=await fetch('https://prezzi-carburante.onrender.com/api/distributori?latitude='+c.lat+'&longitude='+c.lng+'&distance=6&fuel='+fuel+'&results=6'); const a=await r.json(); return Array.isArray(a)?a:[]; }catch(e){ return []; } }));
     const seen={}; const all=[];
-    lists.forEach(list=>list.forEach(s=>{ if(s&&s.prezzo>0){ const key=(s.gestore||'')+'|'+(s.indirizzo||''); if(!seen[key]){ seen[key]=1; all.push(s); } } }));
+    lists.forEach(list=>list.forEach(s=>{ if(s&&s.prezzo>0&&s.latitudine!=null){ const key=(s.gestore||'')+'|'+(s.indirizzo||''); if(seen[key])return; seen[key]=1; const d=distToRoute({lat:+s.latitudine,lng:+s.longitudine},line); if(d<=1500) all.push(s); } }));
     all.sort((a,b)=>a.prezzo-b.prezzo);
-    const top=all.slice(0,3);
-    if(!top.length){ box.innerHTML='<h3>Distributori '+label+'</h3><div class="fh">Nessun distributore trovato lungo il percorso.</div>'; return; }
-    let h='<h3>Distributori '+label+' pi\u00f9 convenienti</h3><div class="fh">Vicino alle tappe del tuo percorso.</div>';
-    top.forEach(s=>{ const addr=(s.indirizzo||'').split(/\s+/).slice(0,6).join(' '); h+='<div class="fuel-row"><span><span class="fn">'+esc(s.gestore||'Distributore')+'</span><br><span class="fa">'+esc(addr)+'</span></span><span class="fp">'+fmt3(s.prezzo)+' \u20ac/L</span></div>'; });
+    const top=all.slice(0,4);
+    if(!top.length){ box.innerHTML='<h3>Distributori '+label+'</h3><div class="fh">Nessun distributore '+label+' trovato proprio sulla tratta.</div>'; return; }
+    let h='<h3>Distributori '+label+' pi\u00f9 convenienti</h3><div class="fh">Solo quelli sulla tratta. Tocca un distributore per aggiungerlo come tappa.</div>';
+    top.forEach(s=>{ const addr=(s.indirizzo||'').replace(/\s+/g,' ').trim(); const short=addr.split(' ').slice(0,6).join(' ');
+      const st={lat:+s.latitudine,lng:+s.longitudine}; const dP=haversine(partenza,st),dM=haversine(meta,st); let km='';
+      if(dP!=null&&dM!=null){ km=' <span class="fkm" title="km in linea d\'aria dalla partenza">+'+Math.round(dP)+' km</span> <span class="fkm neg" title="km in linea d\'aria dall\'arrivo">-'+Math.round(dM)+' km</span>'; }
+      h+='<div class="fuel-row" data-lat="'+(s.latitudine||'')+'" data-lng="'+(s.longitudine||'')+'" data-label="'+encodeURIComponent(addr)+'"><span><span class="fn">'+esc(s.gestore||'Distributore')+'</span>'+km+'<br><span class="fa">'+esc(short)+'</span></span><span class="fp">'+fmt3(s.prezzo)+' \u20ac/L<br><span class="fadd">+ tappa</span></span></div>'; });
+    box.innerHTML=h;
+  }catch(e){ box.style.display='none'; }
+}
+function incType(t){ const m={accident:'Incidente',construction:'Lavori',congestion:'Coda',disabledVehicle:'Veicolo fermo',roadHazard:'Pericolo',weather:'Meteo',roadClosure:'Chiusura',plannedEvent:'Evento',massTransit:'Trasporti',laneRestriction:'Corsia ridotta',other:'Segnalazione'}; return m[t]||'Segnalazione'; }
+async function loadIncidents(polys){
+  const box=$('inc-box');
+  if(!polys||!polys.length){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.innerHTML='<h3>Segnalazioni sul percorso</h3><div class="fh">Controllo incidenti e chiusure\u2026</div>';
+  try{
+    const r=await fetch(TOLL_API+'?mode=incidents',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({polys:polys.slice(0,8),radius:250})});
+    const d=await r.json();
+    if(!d||d.available===false){ box.innerHTML='<h3>Segnalazioni sul percorso</h3><div class="fh">Info traffico non disponibili con il piano HERE attuale.</div>'; return; }
+    const inc=d.incidents||[];
+    if(!inc.length){ box.innerHTML='<h3>Segnalazioni sul percorso</h3><div class="fh">Nessun incidente o chiusura segnalata al momento.</div>'; return; }
+    let h='<h3>Segnalazioni sul percorso</h3><div class="fh">'+inc.length+' segnalazion'+(inc.length>1?'i':'e')+' lungo il tragitto.</div>';
+    inc.forEach(it=>{ const cls=(it.closed||it.crit==='critical'||it.crit==='major')?'bad':'mid'; h+='<div class="inc-row '+cls+'"><span class="inc-t">'+(it.closed?'STRADA CHIUSA':incType(it.type))+'</span><span class="inc-x">'+esc(it.text||incType(it.type))+'</span></div>'; });
     box.innerHTML=h;
   }catch(e){ box.style.display='none'; }
 }
 renderSaved(); renderHistory();
+function addStationStop(label,lat,lng){
+  if((stops.length-2)>=5){ alert('Hai gi\u00e0 il massimo di 5 tappe.'); return; }
+  readStops();
+  let pos=stops.length-1;
+  if(!isNaN(lat)&&!isNaN(lng)){
+    let bestI=0,bestD=Infinity;
+    for(let i=0;i<stops.length;i++){ const c=stopCoord(i); if(c&&c.lat!=null){ const d=(c.lat-lat)*(c.lat-lat)+(c.lng-lng)*(c.lng-lng); if(d<bestD){bestD=d;bestI=i;} } }
+    pos=bestI+1; if(pos>=stops.length)pos=stops.length-1; if(pos<1)pos=1;
+  }
+  stops.splice(pos,0,label);
+  legToll.splice(pos-1,0,true);
+  legData=null; $('results').style.display='none'; renderStops();
+  showMsg('Distributore aggiunto come tappa. Premi Calcola per aggiornare costi e percorso.','ok');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+$('fuel-box').addEventListener('click',e=>{ const row=e.target.closest('.fuel-row'); if(!row||!row.dataset.label)return; addStationStop(decodeURIComponent(row.dataset.label), parseFloat(row.dataset.lat), parseFloat(row.dataset.lng)); });
 
 /* ---- init ---- */
 initPhotos();
