@@ -371,6 +371,15 @@
     .inc-row.bad .inc-t{background:#fdeceb;color:#c8102e}
     .inc-row.mid .inc-t{background:#fdf0e6;color:#c8641f}
     .inc-x{color:var(--asfalto)}
+    .wx-box{background:var(--bianco);border:2px solid var(--grigio-2);border-radius:16px;padding:16px 18px;margin-top:14px}
+    .wx-box h3{font-family:var(--display);font-weight:800;font-size:14px;margin-bottom:4px}
+    .wx-box .fh{font-size:12px;color:var(--tenue);margin-bottom:6px}
+    .wx-seg{font-size:13.5px;padding:9px 0 9px 12px;border-left:3px solid var(--grigio-2);margin-top:8px}
+    .wx-seg b{font-weight:700}
+    .wx-lab{font-weight:800;font-family:var(--display)}
+    .wx-seg.good{border-left-color:var(--verde)} .wx-seg.good .wx-lab{color:var(--verde)}
+    .wx-seg.mid{border-left-color:#c8641f} .wx-seg.mid .wx-lab{color:#c8641f}
+    .wx-seg.bad{border-left-color:#c8102e} .wx-seg.bad .wx-lab{color:#c8102e}
     @media (max-width:470px){.share{grid-template-columns:1fr}}
   </style>
 
@@ -443,6 +452,7 @@
         Apri in Google Maps
       </a>
     </div>
+    <div class="wx-box" id="wx-box" style="display:none"></div>
     <div class="inc-box" id="inc-box" style="display:none"></div>
     <div class="fuel-box" id="fuel-box" style="display:none"></div>
   </div>
@@ -614,6 +624,7 @@ async function calcola(){
     const geom=chosenRouteGeom();
     loadFuelStations(geom.points, stopCoord(0), stopCoord(stops.length-1));
     loadIncidents(geom.polys);
+    loadWeatherAlong(geom.points, tripInfo?tripInfo.totals.km:0);
   }catch(e){
     legData=null;
     if(e&&e.type==='noconf') showMsg('La funzione dei pedaggi non risponde (HERE_API_KEY su Netlify).','err');
@@ -1055,6 +1066,39 @@ async function loadIncidents(polys){
   }catch(e){ box.style.display='none'; }
 }
 renderSaved(); renderHistory();
+function wxQuality(c){
+  if(c<=1) return {key:'buono',label:'buono',cls:'good'};
+  if(c===2||c===3||c===45||c===48||c===51||c===53||c===61||c===80) return {key:'incerto',label:'incerto',cls:'mid'};
+  return {key:'maltempo',label:'maltempo',cls:'bad'};
+}
+async function loadWeatherAlong(routePts, km){
+  const box=$('wx-box');
+  if(!routePts||routePts.length<2){ box.style.display='none'; return; }
+  box.style.display='block';
+  box.innerHTML='<h3>Meteo lungo la tratta</h3><div class="fh">Analisi meteo\u2026</div>';
+  const n=Math.min(8,Math.max(3,Math.ceil((km||100)/70)));
+  const idxs=[]; for(let k=0;k<n;k++) idxs.push(Math.floor(k*(routePts.length-1)/(n-1)));
+  const samp=idxs.map(i=>routePts[i]);
+  try{
+    const lat=samp.map(p=>p.lat).join(','), lng=samp.map(p=>p.lng).join(',');
+    const wr=await fetch('https://api.open-meteo.com/v1/forecast?current=temperature_2m,weather_code&latitude='+lat+'&longitude='+lng);
+    const wd=await wr.json(); const arr=Array.isArray(wd)?wd:[wd];
+    const cats=arr.map(w=> (w&&w.current)?wxQuality(w.current.weather_code):null);
+    const temps=arr.map(w=> (w&&w.current)?Math.round(w.current.temperature_2m):null);
+    if(cats.every(c=>!c)){ box.style.display='none'; return; }
+    const runs=[]; let s=0;
+    for(let i=1;i<cats.length;i++){ if(!cats[i]||!cats[s]||cats[i].key!==cats[s].key){ runs.push({s,cat:cats[s]}); s=i; } }
+    runs.push({s,cat:cats[s]});
+    const need=new Set(); runs.forEach(r=>need.add(r.s)); need.add(cats.length-1);
+    const nm={};
+    await Promise.all([...need].map(async i=>{ try{ const rr=await fetch(TOLL_API+'?mode=reverse&at='+samp[i].lat+','+samp[i].lng); const dd=await rr.json(); nm[i]=dd.city||(dd.label?dd.label.split(',')[0]:''); }catch(e){ nm[i]=''; } }));
+    let h='<h3>Meteo lungo la tratta</h3><div class="fh">Condizioni attuali stimate lungo il percorso.</div>';
+    runs.forEach((r,ri)=>{ if(!r.cat)return; const toIdx=(ri<runs.length-1)?runs[ri+1].s:(cats.length-1); const from=nm[r.s]||'partenza', to=nm[toIdx]||'arrivo'; const t=temps[r.s]!=null?(' \u00b7 '+temps[r.s]+'\u00b0'):'';
+      if(from===to) h+='<div class="wx-seg '+r.cat.cls+'"><span class="wx-lab">Tempo '+r.cat.label+'</span> presso <b>'+esc(from)+'</b>'+t+'</div>';
+      else h+='<div class="wx-seg '+r.cat.cls+'"><span class="wx-lab">Tempo '+r.cat.label+'</span> da <b>'+esc(from)+'</b> a <b>'+esc(to)+'</b>'+t+'</div>'; });
+    box.innerHTML=h;
+  }catch(e){ box.style.display='none'; }
+}
 function addStationStop(label,lat,lng){
   if((stops.length-2)>=5){ alert('Hai gi\u00e0 il massimo di 5 tappe.'); return; }
   readStops();
